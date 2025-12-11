@@ -1,549 +1,626 @@
-import React, { useState } from 'react';
-import { Users, Plus, Shuffle, Trash2, ChevronDown, ChevronUp, UserPlus, Check } from 'lucide-react';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Team & Game Generator</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+  <div id="root"></div>
 
-export default function TeamGameGenerator() {
-  const [playerPool, setPlayerPool] = useState([]);
-  const [activePlayers, setActivePlayers] = useState([]);
-  const [currentName, setCurrentName] = useState('');
-  const [teamSize, setTeamSize] = useState(2);
-  const [games, setGames] = useState([]);
-  const [showSettings, setShowSettings] = useState(false);
-  const [showPlayerPool, setShowPlayerPool] = useState(true);
-  const [numGames, setNumGames] = useState(5);
-  const [playerStats, setPlayerStats] = useState({});
-  const [isLoading, setIsLoading] = useState(true);
+  <script type="text/babel">
+    const { useState, useEffect } = React;
 
-  // Load saved data on mount
-  React.useEffect(() => {
-    const loadData = async () => {
-      try {
-        const result = await window.storage.get('team-generator-data');
-        if (result && result.value) {
-          const data = JSON.parse(result.value);
-          setPlayerPool(data.playerPool || []);
-          setActivePlayers(data.activePlayers || []);
-          setTeamSize(data.teamSize || 2);
-          setNumGames(data.numGames || 5);
-        }
-      } catch (error) {
-        console.log('No saved data found, starting fresh');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadData();
-  }, []);
+    // Lucide icons as inline SVG components
+    const Users = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+      </svg>
+    );
 
-  // Save data whenever it changes
-  React.useEffect(() => {
-    if (!isLoading) {
-      const saveData = async () => {
-        try {
-          await window.storage.set('team-generator-data', JSON.stringify({
-            playerPool,
-            activePlayers,
-            teamSize,
-            numGames
-          }));
-        } catch (error) {
-          console.error('Failed to save data:', error);
-        }
-      };
-      saveData();
-    }
-  }, [playerPool, activePlayers, teamSize, numGames, isLoading]);
+    const Plus = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+      </svg>
+    );
 
-  const addPlayerToPool = () => {
-    if (currentName.trim() && !playerPool.includes(currentName.trim())) {
-      setPlayerPool([...playerPool, currentName.trim()]);
-      setCurrentName('');
-    }
-  };
+    const Shuffle = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+      </svg>
+    );
 
-  const removeFromPool = (name) => {
-    setPlayerPool(playerPool.filter(p => p !== name));
-    setActivePlayers(activePlayers.filter(p => p !== name));
-  };
+    const Trash2 = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+      </svg>
+    );
 
-  const togglePlayerActive = (name) => {
-    if (activePlayers.includes(name)) {
-      setActivePlayers(activePlayers.filter(p => p !== name));
-    } else {
-      setActivePlayers([...activePlayers, name]);
-    }
-  };
+    const ChevronDown = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+      </svg>
+    );
 
-  const selectAll = () => {
-    setActivePlayers([...playerPool]);
-  };
+    const ChevronUp = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+      </svg>
+    );
 
-  const deselectAll = () => {
-    setActivePlayers([]);
-  };
+    const UserPlus = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+      </svg>
+    );
 
-  const shuffleArray = (array) => {
-    const arr = [...array];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  };
+    const Check = ({ className = "w-6 h-6" }) => (
+      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+      </svg>
+    );
 
-  const generateBalancedGames = () => {
-    if (activePlayers.length < teamSize * 2) {
-      alert(`Need at least ${teamSize * 2} active players for ${teamSize}v${teamSize} games`);
-      return;
-    }
-
-    const playersPerGame = teamSize * 2;
-    const playerGameCount = {};
-    activePlayers.forEach(player => {
-      playerGameCount[player] = 0;
-    });
-
-    const newGames = [];
-
-    for (let gameNum = 0; gameNum < numGames; gameNum++) {
-      const availablePlayers = [...activePlayers].sort((a, b) => 
-        playerGameCount[a] - playerGameCount[b]
-      );
-
-      const gamePlayers = [];
-      for (let i = 0; i < playersPerGame && i < availablePlayers.length; i++) {
-        gamePlayers.push(availablePlayers[i]);
-        playerGameCount[availablePlayers[i]]++;
-      }
-
-      const shuffledGamePlayers = shuffleArray(gamePlayers);
-      const teamA = shuffledGamePlayers.slice(0, teamSize);
-      const teamB = shuffledGamePlayers.slice(teamSize, playersPerGame);
-
-      if (teamA.length === teamSize && teamB.length === teamSize) {
-        newGames.push({
-          teamA,
-          teamB,
-          id: Date.now() + gameNum,
-          completed: false,
-          winner: null
+    // Simple localStorage wrapper
+    const storage = {
+      get: (key) => {
+        return new Promise((resolve) => {
+          const value = localStorage.getItem(key);
+          resolve(value ? { key, value } : null);
+        });
+      },
+      set: (key, value) => {
+        return new Promise((resolve) => {
+          localStorage.setItem(key, value);
+          resolve({ key, value });
         });
       }
-    }
-
-    setGames(newGames);
-    setPlayerStats(playerGameCount);
-  };
-
-  const toggleGameComplete = (gameId) => {
-    setGames(games.map(game => 
-      game.id === gameId 
-        ? { ...game, completed: !game.completed, winner: game.completed ? null : game.winner }
-        : game
-    ));
-  };
-
-  const setGameWinner = (gameId, winner) => {
-    setGames(games.map(game => 
-      game.id === gameId 
-        ? { ...game, winner, completed: true }
-        : game
-    ));
-  };
-
-  const clearAll = () => {
-    setActivePlayers([]);
-    setGames([]);
-    setPlayerStats({});
-  };
-
-  const getMinMaxGames = () => {
-    const counts = Object.values(playerStats);
-    if (counts.length === 0) return { min: 0, max: 0 };
-    return {
-      min: Math.min(...counts),
-      max: Math.max(...counts)
     };
-  };
 
-  const getCompletedCount = () => {
-    return games.filter(g => g.completed).length;
-  };
+    function TeamGameGenerator() {
+      const [playerPool, setPlayerPool] = useState([]);
+      const [activePlayers, setActivePlayers] = useState([]);
+      const [currentName, setCurrentName] = useState('');
+      const [teamSize, setTeamSize] = useState(2);
+      const [games, setGames] = useState([]);
+      const [showSettings, setShowSettings] = useState(false);
+      const [showPlayerPool, setShowPlayerPool] = useState(true);
+      const [numGames, setNumGames] = useState(5);
+      const [playerStats, setPlayerStats] = useState({});
+      const [isLoading, setIsLoading] = useState(true);
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your players...</p>
-        </div>
-      </div>
-    );
-  }
+      useEffect(() => {
+        const loadData = async () => {
+          try {
+            const result = await storage.get('team-generator-data');
+            if (result && result.value) {
+              const data = JSON.parse(result.value);
+              setPlayerPool(data.playerPool || []);
+              setActivePlayers(data.activePlayers || []);
+              setTeamSize(data.teamSize || 2);
+              setNumGames(data.numGames || 5);
+            }
+          } catch (error) {
+            console.log('No saved data found, starting fresh');
+          } finally {
+            setIsLoading(false);
+          }
+        };
+        loadData();
+      }, []);
 
-  const stats = getMinMaxGames();
-  const completedGames = getCompletedCount();
+      useEffect(() => {
+        if (!isLoading) {
+          const saveData = async () => {
+            try {
+              await storage.set('team-generator-data', JSON.stringify({
+                playerPool,
+                activePlayers,
+                teamSize,
+                numGames
+              }));
+            } catch (error) {
+              console.error('Failed to save data:', error);
+            }
+          };
+          saveData();
+        }
+      }, [playerPool, activePlayers, teamSize, numGames, isLoading]);
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
-          <div className="flex items-center gap-3 mb-2">
-            <div className="bg-indigo-500 p-3 rounded-2xl">
-              <Users className="w-8 h-8 text-white" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800">Team Generator</h1>
-              <p className="text-gray-500 text-sm">Balanced game scheduling for all players</p>
+      const addPlayerToPool = () => {
+        if (currentName.trim() && !playerPool.includes(currentName.trim())) {
+          setPlayerPool([...playerPool, currentName.trim()]);
+          setCurrentName('');
+        }
+      };
+
+      const removeFromPool = (name) => {
+        setPlayerPool(playerPool.filter(p => p !== name));
+        setActivePlayers(activePlayers.filter(p => p !== name));
+      };
+
+      const togglePlayerActive = (name) => {
+        if (activePlayers.includes(name)) {
+          setActivePlayers(activePlayers.filter(p => p !== name));
+        } else {
+          setActivePlayers([...activePlayers, name]);
+        }
+      };
+
+      const selectAll = () => {
+        setActivePlayers([...playerPool]);
+      };
+
+      const deselectAll = () => {
+        setActivePlayers([]);
+      };
+
+      const shuffleArray = (array) => {
+        const arr = [...array];
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      };
+
+      const generateBalancedGames = () => {
+        if (activePlayers.length < teamSize * 2) {
+          alert(`Need at least ${teamSize * 2} active players for ${teamSize}v${teamSize} games`);
+          return;
+        }
+
+        const playersPerGame = teamSize * 2;
+        const playerGameCount = {};
+        activePlayers.forEach(player => {
+          playerGameCount[player] = 0;
+        });
+
+        const newGames = [];
+
+        for (let gameNum = 0; gameNum < numGames; gameNum++) {
+          const availablePlayers = [...activePlayers].sort((a, b) => 
+            playerGameCount[a] - playerGameCount[b]
+          );
+
+          const gamePlayers = [];
+          for (let i = 0; i < playersPerGame && i < availablePlayers.length; i++) {
+            gamePlayers.push(availablePlayers[i]);
+            playerGameCount[availablePlayers[i]]++;
+          }
+
+          const shuffledGamePlayers = shuffleArray(gamePlayers);
+          const teamA = shuffledGamePlayers.slice(0, teamSize);
+          const teamB = shuffledGamePlayers.slice(teamSize, playersPerGame);
+
+          if (teamA.length === teamSize && teamB.length === teamSize) {
+            newGames.push({
+              teamA,
+              teamB,
+              id: Date.now() + gameNum,
+              completed: false,
+              winner: null
+            });
+          }
+        }
+
+        setGames(newGames);
+        setPlayerStats(playerGameCount);
+      };
+
+      const toggleGameComplete = (gameId) => {
+        setGames(games.map(game => 
+          game.id === gameId 
+            ? { ...game, completed: !game.completed, winner: game.completed ? null : game.winner }
+            : game
+        ));
+      };
+
+      const setGameWinner = (gameId, winner) => {
+        setGames(games.map(game => 
+          game.id === gameId 
+            ? { ...game, winner, completed: true }
+            : game
+        ));
+      };
+
+      const clearAll = () => {
+        setActivePlayers([]);
+        setGames([]);
+        setPlayerStats({});
+      };
+
+      const getMinMaxGames = () => {
+        const counts = Object.values(playerStats);
+        if (counts.length === 0) return { min: 0, max: 0 };
+        return {
+          min: Math.min(...counts),
+          max: Math.max(...counts)
+        };
+      };
+
+      const getCompletedCount = () => {
+        return games.filter(g => g.completed).length;
+      };
+
+      if (isLoading) {
+        return (
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+              <p className="text-gray-600">Loading your players...</p>
             </div>
           </div>
-        </div>
+        );
+      }
 
-        {/* Player Pool Section */}
-        <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
-          <button
-            onClick={() => setShowPlayerPool(!showPlayerPool)}
-            className="flex items-center gap-2 text-gray-800 hover:text-indigo-500 transition-colors mb-4 w-full"
-          >
-            {showPlayerPool ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            <span className="font-bold text-lg">Player Pool ({playerPool.length})</span>
-          </button>
+      const stats = getMinMaxGames();
+      const completedGames = getCompletedCount();
 
-          {showPlayerPool && (
-            <>
-              <div className="flex gap-2 mb-4">
-                <input
-                  type="text"
-                  value={currentName}
-                  onChange={(e) => setCurrentName(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && addPlayerToPool()}
-                  placeholder="Add new player to pool..."
-                  className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-indigo-500 text-lg"
-                />
-                <button
-                  onClick={addPlayerToPool}
-                  className="bg-indigo-500 text-white px-6 py-3 rounded-2xl hover:bg-indigo-600 transition-colors flex items-center gap-2 font-semibold shadow-md"
-                >
-                  <UserPlus className="w-5 h-5" />
-                  Add
-                </button>
-              </div>
-
-              {playerPool.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
-                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                  <p>No players in pool. Add your regular players!</p>
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="bg-indigo-500 p-3 rounded-2xl">
+                  <Users className="w-8 h-8 text-white" />
                 </div>
-              ) : (
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-800">Team Generator</h1>
+                  <p className="text-gray-500 text-sm">Balanced game scheduling for all players</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Player Pool Section */}
+            <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
+              <button
+                onClick={() => setShowPlayerPool(!showPlayerPool)}
+                className="flex items-center gap-2 text-gray-800 hover:text-indigo-500 transition-colors mb-4 w-full"
+              >
+                {showPlayerPool ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                <span className="font-bold text-lg">Player Pool ({playerPool.length})</span>
+              </button>
+
+              {showPlayerPool && (
                 <>
-                  <div className="flex gap-2 mb-3">
+                  <div className="flex gap-2 mb-4">
+                    <input
+                      type="text"
+                      value={currentName}
+                      onChange={(e) => setCurrentName(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addPlayerToPool()}
+                      placeholder="Add new player to pool..."
+                      className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-indigo-500 text-lg"
+                    />
                     <button
-                      onClick={selectAll}
-                      className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                      onClick={addPlayerToPool}
+                      className="bg-indigo-500 text-white px-6 py-3 rounded-2xl hover:bg-indigo-600 transition-colors flex items-center gap-2 font-semibold shadow-md"
                     >
-                      Select All
-                    </button>
-                    <span className="text-gray-300">|</span>
-                    <button
-                      onClick={deselectAll}
-                      className="text-sm text-gray-600 hover:text-gray-700 font-medium"
-                    >
-                      Deselect All
+                      <UserPlus className="w-5 h-5" />
+                      Add
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                    {playerPool.map((player) => {
-                      const isActive = activePlayers.includes(player);
-                      return (
-                        <div
-                          key={player}
-                          className={`relative rounded-2xl p-4 border-2 transition-all cursor-pointer ${
-                            isActive
-                              ? 'bg-indigo-50 border-indigo-400 shadow-md'
-                              : 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                          }`}
-                          onClick={() => togglePlayerActive(player)}
+
+                  {playerPool.length === 0 ? (
+                    <div className="text-center py-8 text-gray-400">
+                      <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p>No players in pool. Add your regular players!</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="flex gap-2 mb-3">
+                        <button
+                          onClick={selectAll}
+                          className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
                         >
-                          <div className="flex items-center justify-between">
-                            <span className={`font-medium ${isActive ? 'text-indigo-700' : 'text-gray-600'}`}>
-                              {player}
-                            </span>
-                            <div className="flex items-center gap-1">
-                              {isActive && (
-                                <div className="bg-indigo-500 text-white rounded-full p-1">
-                                  <Check className="w-4 h-4" />
+                          Select All
+                        </button>
+                        <span className="text-gray-300">|</span>
+                        <button
+                          onClick={deselectAll}
+                          className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                        >
+                          Deselect All
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                        {playerPool.map((player) => {
+                          const isActive = activePlayers.includes(player);
+                          return (
+                            <div
+                              key={player}
+                              className={`relative rounded-2xl p-4 border-2 transition-all cursor-pointer ${
+                                isActive
+                                  ? 'bg-indigo-50 border-indigo-400 shadow-md'
+                                  : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                              }`}
+                              onClick={() => togglePlayerActive(player)}
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className={`font-medium ${isActive ? 'text-indigo-700' : 'text-gray-600'}`}>
+                                  {player}
+                                </span>
+                                <div className="flex items-center gap-1">
+                                  {isActive && (
+                                    <div className="bg-indigo-500 text-white rounded-full p-1">
+                                      <Check className="w-4 h-4" />
+                                    </div>
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      removeFromPool(player);
+                                    }}
+                                    className="hover:bg-red-100 rounded-full p-1 transition-colors ml-1"
+                                  >
+                                    <Trash2 className="w-4 h-4 text-red-500" />
+                                  </button>
                                 </div>
+                              </div>
+                              {playerStats[player] !== undefined && (
+                                <span className="text-xs text-gray-500 mt-1 block">
+                                  {playerStats[player]} games today
+                                </span>
                               )}
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  removeFromPool(player);
-                                }}
-                                className="hover:bg-red-100 rounded-full p-1 transition-colors ml-1"
-                              >
-                                <Trash2 className="w-4 h-4 text-red-500" />
-                              </button>
                             </div>
-                          </div>
-                          {playerStats[player] !== undefined && (
-                            <span className="text-xs text-gray-500 mt-1 block">
-                              {playerStats[player]} games today
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                 </>
               )}
-            </>
-          )}
-        </div>
-
-        {/* Active Players Summary */}
-        {activePlayers.length > 0 && (
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-3xl shadow-lg p-6 mb-4 border-2 border-green-200">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="font-bold text-green-800 text-lg">Playing Today ({activePlayers.length})</h3>
-              <button
-                onClick={deselectAll}
-                className="text-sm text-green-700 hover:text-green-800 flex items-center gap-1 font-medium"
-              >
-                <Trash2 className="w-4 h-4" />
-                Clear Selection
-              </button>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {activePlayers.map((player) => (
-                <span
-                  key={player}
-                  className="bg-white text-green-700 px-4 py-2 rounded-full font-medium border-2 border-green-300 shadow-sm"
-                >
-                  {player}
-                  {playerStats[player] !== undefined && (
-                    <span className="ml-2 bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded-full font-bold">
-                      {playerStats[player]}
+
+            {/* Active Players Summary */}
+            {activePlayers.length > 0 && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-3xl shadow-lg p-6 mb-4 border-2 border-green-200">
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-bold text-green-800 text-lg">Playing Today ({activePlayers.length})</h3>
+                  <button
+                    onClick={deselectAll}
+                    className="text-sm text-green-700 hover:text-green-800 flex items-center gap-1 font-medium"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    Clear Selection
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {activePlayers.map((player) => (
+                    <span
+                      key={player}
+                      className="bg-white text-green-700 px-4 py-2 rounded-full font-medium border-2 border-green-300 shadow-sm"
+                    >
+                      {player}
+                      {playerStats[player] !== undefined && (
+                        <span className="ml-2 bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded-full font-bold">
+                          {playerStats[player]}
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Settings Section */}
-        <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className="flex items-center gap-2 text-gray-600 hover:text-indigo-500 transition-colors mb-2"
-          >
-            {showSettings ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            <span className="font-medium">Settings</span>
-          </button>
-
-          {showSettings && (
-            <div className="bg-gray-50 rounded-2xl p-4 mb-4 space-y-4">
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Number of Games: {numGames}
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="20"
-                  value={numGames}
-                  onChange={(e) => setNumGames(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>1</span>
-                  <span>5</span>
-                  <span>10</span>
-                  <span>15</span>
-                  <span>20</span>
+                  ))}
                 </div>
               </div>
+            )}
 
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Players per team: {teamSize}
-                </label>
-                <input
-                  type="range"
-                  min="1"
-                  max="6"
-                  value={teamSize}
-                  onChange={(e) => setTeamSize(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
-                  <span>1v1</span>
-                  <span>2v2</span>
-                  <span>3v3</span>
-                  <span>4v4</span>
-                  <span>5v5</span>
-                  <span>6v6</span>
+            {/* Settings Section */}
+            <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className="flex items-center gap-2 text-gray-600 hover:text-indigo-500 transition-colors mb-2"
+              >
+                {showSettings ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                <span className="font-medium">Settings</span>
+              </button>
+
+              {showSettings && (
+                <div className="bg-gray-50 rounded-2xl p-4 mb-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Number of Games: {numGames}
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="20"
+                      value={numGames}
+                      onChange={(e) => setNumGames(Number(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>1</span>
+                      <span>5</span>
+                      <span>10</span>
+                      <span>15</span>
+                      <span>20</span>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Players per team: {teamSize}
+                    </label>
+                    <input
+                      type="range"
+                      min="1"
+                      max="6"
+                      value={teamSize}
+                      onChange={(e) => setTeamSize(Number(e.target.value))}
+                      className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>1v1</span>
+                      <span>2v2</span>
+                      <span>3v3</span>
+                      <span>4v4</span>
+                      <span>5v5</span>
+                      <span>6v6</span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-          )}
+              )}
 
-          {/* Generate Button */}
-          {activePlayers.length >= teamSize * 2 && (
-            <button
-              onClick={generateBalancedGames}
-              className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-4 rounded-2xl hover:from-indigo-600 hover:to-purple-600 transition-all flex items-center justify-center gap-2 font-bold text-lg shadow-lg"
-            >
-              <Shuffle className="w-6 h-6" />
-              Generate {numGames} Balanced Games
-            </button>
-          )}
-          
-          {activePlayers.length > 0 && activePlayers.length < teamSize * 2 && (
-            <div className="text-center py-4 text-amber-600 font-medium">
-              Need at least {teamSize * 2} players for {teamSize}v{teamSize} games
-              <br />
-              <span className="text-sm">(Currently have {activePlayers.length})</span>
+              {activePlayers.length >= teamSize * 2 && (
+                <button
+                  onClick={generateBalancedGames}
+                  className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-4 rounded-2xl hover:from-indigo-600 hover:to-purple-600 transition-all flex items-center justify-center gap-2 font-bold text-lg shadow-lg"
+                >
+                  <Shuffle className="w-6 h-6" />
+                  Generate {numGames} Balanced Games
+                </button>
+              )}
+              
+              {activePlayers.length > 0 && activePlayers.length < teamSize * 2 && (
+                <div className="text-center py-4 text-amber-600 font-medium">
+                  Need at least {teamSize * 2} players for {teamSize}v{teamSize} games
+                  <br />
+                  <span className="text-sm">(Currently have {activePlayers.length})</span>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {/* Stats Summary */}
-        {games.length > 0 && (
-          <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
-            <h3 className="font-bold text-gray-800 mb-3">Distribution Summary</h3>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="bg-blue-50 rounded-2xl p-4 text-center">
-                <div className="text-3xl font-bold text-blue-600">{stats.min}</div>
-                <div className="text-sm text-gray-600">Min games</div>
+            {/* Stats Summary */}
+            {games.length > 0 && (
+              <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
+                <h3 className="font-bold text-gray-800 mb-3">Distribution Summary</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="bg-blue-50 rounded-2xl p-4 text-center">
+                    <div className="text-3xl font-bold text-blue-600">{stats.min}</div>
+                    <div className="text-sm text-gray-600">Min games</div>
+                  </div>
+                  <div className="bg-purple-50 rounded-2xl p-4 text-center">
+                    <div className="text-3xl font-bold text-purple-600">{stats.max}</div>
+                    <div className="text-sm text-gray-600">Max games</div>
+                  </div>
+                  <div className="bg-green-50 rounded-2xl p-4 text-center">
+                    <div className="text-3xl font-bold text-green-600">{completedGames}/{games.length}</div>
+                    <div className="text-sm text-gray-600">Completed</div>
+                  </div>
+                </div>
+                {stats.max - stats.min <= 1 ? (
+                  <div className="mt-3 text-center text-green-600 font-medium text-sm">
+                    ✓ Perfect balance achieved!
+                  </div>
+                ) : (
+                  <div className="mt-3 text-center text-amber-600 font-medium text-sm">
+                    Difference of {stats.max - stats.min} games (best possible with {activePlayers.length} players)
+                  </div>
+                )}
               </div>
-              <div className="bg-purple-50 rounded-2xl p-4 text-center">
-                <div className="text-3xl font-bold text-purple-600">{stats.max}</div>
-                <div className="text-sm text-gray-600">Max games</div>
-              </div>
-              <div className="bg-green-50 rounded-2xl p-4 text-center">
-                <div className="text-3xl font-bold text-green-600">{completedGames}/{games.length}</div>
-                <div className="text-sm text-gray-600">Completed</div>
-              </div>
-            </div>
-            {stats.max - stats.min <= 1 ? (
-              <div className="mt-3 text-center text-green-600 font-medium text-sm">
-                ✓ Perfect balance achieved!
-              </div>
-            ) : (
-              <div className="mt-3 text-center text-amber-600 font-medium text-sm">
-                Difference of {stats.max - stats.min} games (best possible with {activePlayers.length} players)
+            )}
+
+            {/* Games Display */}
+            {games.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between px-2">
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Games Schedule ({games.length})
+                  </h2>
+                  <button
+                    onClick={generateBalancedGames}
+                    className="text-indigo-500 hover:text-indigo-600 flex items-center gap-1 text-sm font-semibold"
+                  >
+                    <Shuffle className="w-4 h-4" />
+                    Regenerate
+                  </button>
+                </div>
+                {games.map((game, idx) => (
+                  <div key={game.id} className={`bg-white rounded-3xl shadow-lg p-6 transition-all ${game.completed ? 'opacity-60' : ''}`}>
+                    <div className="flex items-center justify-between mb-4">
+                      <span className={`px-4 py-2 rounded-full font-bold text-sm ${
+                        game.completed 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-indigo-100 text-indigo-700'
+                      }`}>
+                        {game.completed ? '✓ Completed' : `Game ${idx + 1}`}
+                      </span>
+                      <button
+                        onClick={() => toggleGameComplete(game.id)}
+                        className={`px-4 py-2 rounded-full font-medium text-sm transition-colors ${
+                          game.completed
+                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            : 'bg-green-500 text-white hover:bg-green-600'
+                        }`}
+                      >
+                        {game.completed ? 'Reopen' : 'Mark Complete'}
+                      </button>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
+                      <div className={`rounded-2xl p-4 border-2 transition-all ${
+                        game.winner === 'A' 
+                          ? 'bg-blue-100 border-blue-400 ring-2 ring-blue-400' 
+                          : 'bg-blue-50 border-blue-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-blue-700 text-lg">Team A</h3>
+                          {!game.completed && (
+                            <button
+                              onClick={() => setGameWinner(game.id, 'A')}
+                              className="text-xs bg-blue-500 text-white px-3 py-1 rounded-full hover:bg-blue-600"
+                            >
+                              Win
+                            </button>
+                          )}
+                          {game.winner === 'A' && (
+                            <span className="text-xl">🏆</span>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          {game.teamA.map((player) => (
+                            <div key={player} className="bg-white rounded-xl px-4 py-2 text-center font-medium text-gray-700 shadow-sm">
+                              {player}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="text-center">
+                        <span className="text-4xl font-bold text-gray-300">VS</span>
+                      </div>
+
+                      <div className={`rounded-2xl p-4 border-2 transition-all ${
+                        game.winner === 'B' 
+                          ? 'bg-red-100 border-red-400 ring-2 ring-red-400' 
+                          : 'bg-red-50 border-red-200'
+                      }`}>
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-bold text-red-700 text-lg">Team B</h3>
+                          {!game.completed && (
+                            <button
+                              onClick={() => setGameWinner(game.id, 'B')}
+                              className="text-xs bg-red-500 text-white px-3 py-1 rounded-full hover:bg-red-600"
+                            >
+                              Win
+                            </button>
+                          )}
+                          {game.winner === 'B' && (
+                            <span className="text-xl">🏆</span>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          {game.teamB.map((player) => (
+                            <div key={player} className="bg-white rounded-xl px-4 py-2 text-center font-medium text-gray-700 shadow-sm">
+                              {player}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        )}
+        </div>
+      );
+    }
 
-        {/* Games Display */}
-        {games.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between px-2">
-              <h2 className="text-2xl font-bold text-gray-800">
-                Games Schedule ({games.length})
-              </h2>
-              <button
-                onClick={generateBalancedGames}
-                className="text-indigo-500 hover:text-indigo-600 flex items-center gap-1 text-sm font-semibold"
-              >
-                <Shuffle className="w-4 h-4" />
-                Regenerate
-              </button>
-            </div>
-            {games.map((game, idx) => (
-              <div key={game.id} className={`bg-white rounded-3xl shadow-lg p-6 transition-all ${game.completed ? 'opacity-60' : ''}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <span className={`px-4 py-2 rounded-full font-bold text-sm ${
-                    game.completed 
-                      ? 'bg-green-100 text-green-700' 
-                      : 'bg-indigo-100 text-indigo-700'
-                  }`}>
-                    {game.completed ? '✓ Completed' : `Game ${idx + 1}`}
-                  </span>
-                  <button
-                    onClick={() => toggleGameComplete(game.id)}
-                    className={`px-4 py-2 rounded-full font-medium text-sm transition-colors ${
-                      game.completed
-                        ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                        : 'bg-green-500 text-white hover:bg-green-600'
-                    }`}
-                  >
-                    {game.completed ? 'Reopen' : 'Mark Complete'}
-                  </button>
-                </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                  {/* Team A */}
-                  <div className={`rounded-2xl p-4 border-2 transition-all ${
-                    game.winner === 'A' 
-                      ? 'bg-blue-100 border-blue-400 ring-2 ring-blue-400' 
-                      : 'bg-blue-50 border-blue-200'
-                  }`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-blue-700 text-lg">Team A</h3>
-                      {!game.completed && (
-                        <button
-                          onClick={() => setGameWinner(game.id, 'A')}
-                          className="text-xs bg-blue-500 text-white px-3 py-1 rounded-full hover:bg-blue-600"
-                        >
-                          Win
-                        </button>
-                      )}
-                      {game.winner === 'A' && (
-                        <span className="text-xl">🏆</span>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      {game.teamA.map((player) => (
-                        <div key={player} className="bg-white rounded-xl px-4 py-2 text-center font-medium text-gray-700 shadow-sm">
-                          {player}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* VS */}
-                  <div className="text-center">
-                    <span className="text-4xl font-bold text-gray-300">VS</span>
-                  </div>
-
-                  {/* Team B */}
-                  <div className={`rounded-2xl p-4 border-2 transition-all ${
-                    game.winner === 'B' 
-                      ? 'bg-red-100 border-red-400 ring-2 ring-red-400' 
-                      : 'bg-red-50 border-red-200'
-                  }`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <h3 className="font-bold text-red-700 text-lg">Team B</h3>
-                      {!game.completed && (
-                        <button
-                          onClick={() => setGameWinner(game.id, 'B')}
-                          className="text-xs bg-red-500 text-white px-3 py-1 rounded-full hover:bg-red-600"
-                        >
-                          Win
-                        </button>
-                      )}
-                      {game.winner === 'B' && (
-                        <span className="text-xl">🏆</span>
-                      )}
-                    </div>
-                    <div className="space-y-2">
-                      {game.teamB.map((player) => (
-                        <div key={player} className="bg-white rounded-xl px-4 py-2 text-center font-medium text-gray-700 shadow-sm">
-                          {player}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+    ReactDOM.render(<TeamGameGenerator />, document.getElementById('root'));
+  </script>
+</body>
+</html>
