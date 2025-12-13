@@ -593,24 +593,24 @@
                   </button>
                 </div>
                 {games.map((game, idx) => (
-                  <div key={game.id} className={`bg-white rounded-2xl shadow p-4 transition-all ${game.completed ? 'opacity-50' : ''}`}>
+                  <div key={game.id} className={`bg-white rounded-2xl shadow p-4 transition-all ${game.completed ? 'opacity-50 bg-gray-50' : ''}`}>
                     <div className="flex items-center justify-between mb-3">
                       <span className={`px-3 py-1 rounded-full font-semibold text-sm ${
                         game.completed 
-                          ? 'bg-green-100 text-green-700' 
+                          ? 'bg-gray-200 text-gray-600' 
                           : 'bg-indigo-100 text-indigo-700'
                       }`}>
                         Game {idx + 1}
                       </span>
                       <button
                         onClick={() => toggleGameComplete(game.id)}
-                        className={`px-3 py-1 rounded-full font-medium text-sm transition-colors ${
+                        className={`px-4 py-1.5 rounded-full font-semibold text-sm transition-colors ${
                           game.completed
-                            ? 'bg-gray-200 text-gray-600 hover:bg-gray-300'
-                            : 'bg-green-500 text-white hover:bg-green-600'
+                            ? 'bg-green-500 text-white hover:bg-green-600'
+                            : 'bg-blue-500 text-white hover:bg-blue-600'
                         }`}
                       >
-                        {game.completed ? '✓ Done' : 'Complete'}
+                        {game.completed ? '✓ Done' : '▶ Play'}
                       </button>
                     </div>
                     
