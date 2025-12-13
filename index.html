@@ -175,34 +175,106 @@
 
         const playersPerGame = teamSize * 2;
         const playerGameCount = {};
+        const partnerHistory = {}; // Track who has been teammates
+        const opponentHistory = {}; // Track who has been opponents
+        
         activePlayers.forEach(player => {
           playerGameCount[player] = 0;
+          partnerHistory[player] = {};
+          opponentHistory[player] = {};
+          activePlayers.forEach(other => {
+            if (player !== other) {
+              partnerHistory[player][other] = 0;
+              opponentHistory[player][other] = 0;
+            }
+          });
         });
 
         const newGames = [];
 
+        // Helper function to get partnership score (lower is better - less repeated)
+        const getPartnershipScore = (player1, player2) => {
+          return partnerHistory[player1][player2] || 0;
+        };
+
+        // Helper function to calculate team compatibility score
+        const getTeamScore = (team) => {
+          let score = 0;
+          for (let i = 0; i < team.length; i++) {
+            for (let j = i + 1; j < team.length; j++) {
+              score += getPartnershipScore(team[i], team[j]);
+            }
+          }
+          return score;
+        };
+
         for (let gameNum = 0; gameNum < numGames; gameNum++) {
+          // Sort players by game count (balance play time)
           const availablePlayers = [...activePlayers].sort((a, b) => 
             playerGameCount[a] - playerGameCount[b]
           );
 
-          const gamePlayers = [];
-          for (let i = 0; i < playersPerGame && i < availablePlayers.length; i++) {
-            gamePlayers.push(availablePlayers[i]);
-            playerGameCount[availablePlayers[i]]++;
+          // Select players who have played least
+          const gamePlayers = availablePlayers.slice(0, playersPerGame);
+          
+          // Try different team combinations and pick the one with least repeated partnerships
+          let bestTeamA = null;
+          let bestTeamB = null;
+          let lowestScore = Infinity;
+
+          // Generate multiple random combinations and pick the best
+          for (let attempt = 0; attempt < 50; attempt++) {
+            const shuffled = shuffleArray([...gamePlayers]);
+            const teamA = shuffled.slice(0, teamSize);
+            const teamB = shuffled.slice(teamSize, playersPerGame);
+            
+            const scoreA = getTeamScore(teamA);
+            const scoreB = getTeamScore(teamB);
+            const totalScore = scoreA + scoreB;
+
+            if (totalScore < lowestScore) {
+              lowestScore = totalScore;
+              bestTeamA = teamA;
+              bestTeamB = teamB;
+            }
+
+            // If we found a perfect combination (no repeated partners), use it
+            if (totalScore === 0) break;
           }
 
-          const shuffledGamePlayers = shuffleArray(gamePlayers);
-          const teamA = shuffledGamePlayers.slice(0, teamSize);
-          const teamB = shuffledGamePlayers.slice(teamSize, playersPerGame);
+          if (bestTeamA && bestTeamB && bestTeamA.length === teamSize && bestTeamB.length === teamSize) {
+            // Update history
+            gamePlayers.forEach(player => {
+              playerGameCount[player]++;
+            });
 
-          if (teamA.length === teamSize && teamB.length === teamSize) {
+            // Update partner history
+            for (let i = 0; i < bestTeamA.length; i++) {
+              for (let j = i + 1; j < bestTeamA.length; j++) {
+                partnerHistory[bestTeamA[i]][bestTeamA[j]]++;
+                partnerHistory[bestTeamA[j]][bestTeamA[i]]++;
+              }
+            }
+            for (let i = 0; i < bestTeamB.length; i++) {
+              for (let j = i + 1; j < bestTeamB.length; j++) {
+                partnerHistory[bestTeamB[i]][bestTeamB[j]]++;
+                partnerHistory[bestTeamB[j]][bestTeamB[i]]++;
+              }
+            }
+
+            // Update opponent history
+            bestTeamA.forEach(playerA => {
+              bestTeamB.forEach(playerB => {
+                opponentHistory[playerA][playerB]++;
+                opponentHistory[playerB][playerA]++;
+              });
+            });
+
             newGames.push({
-              teamA,
-              teamB,
-              id: Date.now() + gameNum,
-              completed: false,
-              winner: null
+              teamA: bestTeamA,
+              teamB: bestTeamB,
+              id: Date.now() + gameNum * 100,
+              completed: false
             });
           }
         }
@@ -214,15 +286,7 @@
       const toggleGameComplete = (gameId) => {
         setGames(games.map(game => 
           game.id === gameId 
-            ? { ...game, completed: !game.completed, winner: game.completed ? null : game.winner }
-            : game
-        ));
-      };
-
-      const setGameWinner = (gameId, winner) => {
-        setGames(games.map(game => 
-          game.id === gameId 
-            ? { ...game, winner, completed: true }
+            ? { ...game, completed: !game.completed }
             : game
         ));
       };
@@ -529,84 +593,49 @@
                   </button>
                 </div>
                 {games.map((game, idx) => (
-                  <div key={game.id} className={`bg-white rounded-3xl shadow-lg p-6 transition-all ${game.completed ? 'opacity-60' : ''}`}>
-                    <div className="flex items-center justify-between mb-4">
-                      <span className={`px-4 py-2 rounded-full font-bold text-sm ${
+                  <div key={game.id} className={`bg-white rounded-2xl shadow p-4 transition-all ${game.completed ? 'opacity-50' : ''}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`px-3 py-1 rounded-full font-semibold text-sm ${
                         game.completed 
                           ? 'bg-green-100 text-green-700' 
                           : 'bg-indigo-100 text-indigo-700'
                       }`}>
-                        {game.completed ? '✓ Completed' : `Game ${idx + 1}`}
+                        Game {idx + 1}
                       </span>
                       <button
                         onClick={() => toggleGameComplete(game.id)}
-                        className={`px-4 py-2 rounded-full font-medium text-sm transition-colors ${
+                        className={`px-3 py-1 rounded-full font-medium text-sm transition-colors ${
                           game.completed
-                            ? 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                            ? 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                             : 'bg-green-500 text-white hover:bg-green-600'
                         }`}
                       >
-                        {game.completed ? 'Reopen' : 'Mark Complete'}
+                        {game.completed ? '✓ Done' : 'Complete'}
                       </button>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-center">
-                      <div className={`rounded-2xl p-4 border-2 transition-all ${
-                        game.winner === 'A' 
-                          ? 'bg-blue-100 border-blue-400 ring-2 ring-blue-400' 
-                          : 'bg-blue-50 border-blue-200'
-                      }`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-bold text-blue-700 text-lg">Team A</h3>
-                          {!game.completed && (
-                            <button
-                              onClick={() => setGameWinner(game.id, 'A')}
-                              className="text-xs bg-blue-500 text-white px-3 py-1 rounded-full hover:bg-blue-600"
-                            >
-                              Win
-                            </button>
-                          )}
-                          {game.winner === 'A' && (
-                            <span className="text-xl">🏆</span>
-                          )}
-                        </div>
-                        <div className="space-y-2">
+                    <div className="flex items-center gap-3 justify-center">
+                      {/* Team A */}
+                      <div className="bg-blue-50 rounded-xl p-3 border border-blue-200 flex-1">
+                        <div className="flex flex-wrap gap-1 justify-center">
                           {game.teamA.map((player) => (
-                            <div key={player} className="bg-white rounded-xl px-4 py-2 text-center font-medium text-gray-700 shadow-sm">
+                            <span key={player} className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-medium">
                               {player}
-                            </div>
+                            </span>
                           ))}
                         </div>
                       </div>
 
-                      <div className="text-center">
-                        <span className="text-4xl font-bold text-gray-300">VS</span>
-                      </div>
+                      {/* VS */}
+                      <span className="text-xl font-bold text-gray-400">vs</span>
 
-                      <div className={`rounded-2xl p-4 border-2 transition-all ${
-                        game.winner === 'B' 
-                          ? 'bg-red-100 border-red-400 ring-2 ring-red-400' 
-                          : 'bg-red-50 border-red-200'
-                      }`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-bold text-red-700 text-lg">Team B</h3>
-                          {!game.completed && (
-                            <button
-                              onClick={() => setGameWinner(game.id, 'B')}
-                              className="text-xs bg-red-500 text-white px-3 py-1 rounded-full hover:bg-red-600"
-                            >
-                              Win
-                            </button>
-                          )}
-                          {game.winner === 'B' && (
-                            <span className="text-xl">🏆</span>
-                          )}
-                        </div>
-                        <div className="space-y-2">
+                      {/* Team B */}
+                      <div className="bg-red-50 rounded-xl p-3 border border-red-200 flex-1">
+                        <div className="flex flex-wrap gap-1 justify-center">
                           {game.teamB.map((player) => (
-                            <div key={player} className="bg-white rounded-xl px-4 py-2 text-center font-medium text-gray-700 shadow-sm">
+                            <span key={player} className="bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-medium">
                               {player}
-                            </div>
+                            </span>
                           ))}
                         </div>
                       </div>
