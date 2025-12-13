@@ -582,7 +582,7 @@
               <div className="space-y-4">
                 <div className="flex items-center justify-between px-2">
                   <h2 className="text-2xl font-bold text-gray-800">
-                    Games Schedule ({games.length})
+                    Games Schedule ({completedGames}/{games.length} completed)
                   </h2>
                   <button
                     onClick={generateBalancedGames}
@@ -592,56 +592,62 @@
                     Regenerate
                   </button>
                 </div>
-                {games.map((game, idx) => (
-                  <div key={game.id} className={`bg-white rounded-2xl shadow p-4 transition-all ${game.completed ? 'opacity-50 bg-gray-50' : ''}`}>
-                    <div className="flex items-center justify-between mb-3">
-                      <span className={`px-3 py-1 rounded-full font-semibold text-sm ${
-                        game.completed 
-                          ? 'bg-gray-200 text-gray-600' 
-                          : 'bg-indigo-100 text-indigo-700'
-                      }`}>
-                        Game {idx + 1}
-                      </span>
-                      <button
-                        onClick={() => toggleGameComplete(game.id)}
-                        className={`px-4 py-1.5 rounded-full font-semibold text-sm transition-colors ${
-                          game.completed
-                            ? 'bg-green-500 text-white hover:bg-green-600'
-                            : 'bg-blue-500 text-white hover:bg-blue-600'
-                        }`}
-                      >
-                        {game.completed ? '✓ Done' : '▶ Play'}
-                      </button>
-                    </div>
-                    
-                    <div className="flex items-center gap-3 justify-center">
-                      {/* Team A */}
-                      <div className="bg-blue-50 rounded-xl p-3 border border-blue-200 flex-1">
-                        <div className="flex flex-wrap gap-1 justify-center">
-                          {game.teamA.map((player) => (
-                            <span key={player} className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-medium">
-                              {player}
-                            </span>
-                          ))}
+                {[...games].sort((a, b) => {
+                  if (a.completed === b.completed) return 0;
+                  return a.completed ? 1 : -1;
+                }).map((game, idx) => {
+                  const originalIndex = games.findIndex(g => g.id === game.id);
+                  return (
+                    <div key={game.id} className={`bg-white rounded-2xl shadow p-4 transition-all ${game.completed ? 'opacity-50 bg-gray-50' : ''}`}>
+                      <div className="flex items-center justify-between mb-3">
+                        <span className={`px-3 py-1 rounded-full font-semibold text-sm ${
+                          game.completed 
+                            ? 'bg-gray-200 text-gray-600' 
+                            : 'bg-indigo-100 text-indigo-700'
+                        }`}>
+                          Game {originalIndex + 1}
+                        </span>
+                        <button
+                          onClick={() => toggleGameComplete(game.id)}
+                          className={`px-4 py-1.5 rounded-full font-semibold text-sm transition-colors ${
+                            game.completed
+                              ? 'bg-green-500 text-white hover:bg-green-600'
+                              : 'bg-blue-500 text-white hover:bg-blue-600'
+                          }`}
+                        >
+                          {game.completed ? '✓ Done' : '▶ Play'}
+                        </button>
+                      </div>
+                      
+                      <div className="flex items-center gap-3 justify-center">
+                        {/* Team A */}
+                        <div className="bg-blue-50 rounded-xl p-3 border border-blue-200 flex-1">
+                          <div className="flex flex-wrap gap-1 justify-center">
+                            {game.teamA.map((player) => (
+                              <span key={player} className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-medium">
+                                {player}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* VS */}
+                        <span className="text-xl font-bold text-gray-400">vs</span>
+
+                        {/* Team B */}
+                        <div className="bg-red-50 rounded-xl p-3 border border-red-200 flex-1">
+                          <div className="flex flex-wrap gap-1 justify-center">
+                            {game.teamB.map((player) => (
+                              <span key={player} className="bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-medium">
+                                {player}
+                              </span>
+                            ))}
+                          </div>
                         </div>
                       </div>
-
-                      {/* VS */}
-                      <span className="text-xl font-bold text-gray-400">vs</span>
-
-                      {/* Team B */}
-                      <div className="bg-red-50 rounded-xl p-3 border border-red-200 flex-1">
-                        <div className="flex flex-wrap gap-1 justify-center">
-                          {game.teamB.map((player) => (
-                            <span key={player} className="bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-medium">
-                              {player}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
