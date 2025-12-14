@@ -90,6 +90,7 @@
       const [numGames, setNumGames] = useState(5);
       const [playerStats, setPlayerStats] = useState({});
       const [isLoading, setIsLoading] = useState(true);
+      const [selectedPlayer, setSelectedPlayer] = useState(null);
 
       useEffect(() => {
         const loadData = async () => {
@@ -281,6 +282,38 @@
         return games.filter(g => g.completed).length;
       };
 
+      const getPlayerGamesInfo = (playerName) => {
+        const playerGames = games.filter(game => 
+          game.teamA.includes(playerName) || game.teamB.includes(playerName)
+        );
+        
+        const teammates = new Set();
+        playerGames.forEach(game => {
+          const team = game.teamA.includes(playerName) ? game.teamA : game.teamB;
+          team.forEach(p => {
+            if (p !== playerName) teammates.add(p);
+          });
+        });
+        
+        return {
+          games: playerGames,
+          teammates: Array.from(teammates),
+          gameCount: playerGames.length
+        };
+      };
+
+      const handlePlayerClick = (playerName) => {
+        if (selectedPlayer === playerName) {
+          setSelectedPlayer(null);
+        } else {
+          setSelectedPlayer(playerName);
+        }
+      };
+
+      const isPlayerInGame = (game, playerName) => {
+        return game.teamA.includes(playerName) || game.teamB.includes(playerName);
+      };
+
       if (isLoading) {
         return (
           <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
@@ -351,6 +384,8 @@
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                         {playerPool.map((player) => {
                           const isActive = activePlayers.includes(player);
+                          const gameCount = playerStats[player] || 0;
+                          const isSelected = selectedPlayer === player;
                           return (
                             <div
                               key={player}
@@ -358,7 +393,7 @@
                                 isActive
                                   ? 'bg-indigo-50 border-indigo-300'
                                   : 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                              }`}
+                              } ${isSelected ? 'ring-2 ring-yellow-400' : ''}`}
                               onClick={() => togglePlayerActive(player)}
                             >
                               <div className="flex items-center justify-between">
@@ -366,6 +401,11 @@
                                   {player}
                                 </span>
                                 <div className="flex items-center gap-1 flex-shrink-0">
+                                  {gameCount > 0 && (
+                                    <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
+                                      {gameCount}
+                                    </span>
+                                  )}
                                   {isActive && (
                                     <div className="bg-indigo-500 text-white rounded-full p-0.5">
                                       <Check className="w-3 h-3" />
