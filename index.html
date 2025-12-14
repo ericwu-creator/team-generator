@@ -278,6 +278,46 @@
         };
       };
 
+      const getTeammateDiversityStats = () => {
+        if (games.length === 0 || activePlayers.length === 0) return { min: 0, max: 0, avg: 0 };
+        
+        const partnerCounts = {};
+        activePlayers.forEach(player => {
+          partnerCounts[player] = {};
+          activePlayers.forEach(other => {
+            if (player !== other) partnerCounts[player][other] = 0;
+          });
+        });
+
+        games.forEach(game => {
+          const processTeam = (team) => {
+            for (let i = 0; i < team.length; i++) {
+              for (let j = i + 1; j < team.length; j++) {
+                partnerCounts[team[i]][team[j]]++;
+                partnerCounts[team[j]][team[i]]++;
+              }
+            }
+          };
+          processTeam(game.teamA);
+          processTeam(game.teamB);
+        });
+
+        const repeatCounts = [];
+        Object.values(partnerCounts).forEach(partners => {
+          Object.values(partners).forEach(count => {
+            if (count > 0) repeatCounts.push(count);
+          });
+        });
+
+        if (repeatCounts.length === 0) return { min: 0, max: 0, avg: 0 };
+
+        return {
+          min: Math.min(...repeatCounts),
+          max: Math.max(...repeatCounts),
+          avg: (repeatCounts.reduce((a, b) => a + b, 0) / repeatCounts.length).toFixed(1)
+        };
+      };
+
       const getCompletedCount = () => {
         return games.filter(g => g.completed).length;
       };
@@ -327,6 +367,7 @@
 
       const stats = getMinMaxGames();
       const completedGames = getCompletedCount();
+      const diversityStats = getTeammateDiversityStats();
 
       return (
         <div className="min-h-screen bg-gray-50 p-3">
@@ -541,18 +582,38 @@
             {games.length > 0 && (
               <div className="bg-white rounded-lg shadow-sm p-3 mb-3 border border-gray-200">
                 <h3 className="font-semibold text-gray-700 mb-2 text-sm">Stats</h3>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-3 gap-2 mb-2">
                   <div className="bg-blue-50 rounded-lg p-2 text-center border border-blue-100">
                     <div className="text-xl font-bold text-blue-600">{stats.min}</div>
-                    <div className="text-xs text-gray-600">Min</div>
+                    <div className="text-xs text-gray-600">Min Games</div>
                   </div>
                   <div className="bg-purple-50 rounded-lg p-2 text-center border border-purple-100">
                     <div className="text-xl font-bold text-purple-600">{stats.max}</div>
-                    <div className="text-xs text-gray-600">Max</div>
+                    <div className="text-xs text-gray-600">Max Games</div>
                   </div>
                   <div className="bg-green-50 rounded-lg p-2 text-center border border-green-100">
                     <div className="text-xl font-bold text-green-600">{completedGames}/{games.length}</div>
                     <div className="text-xs text-gray-600">Done</div>
+                  </div>
+                </div>
+                <div className="pt-2 border-t border-gray-200">
+                  <div className="text-xs font-semibold text-gray-700 mb-1.5">Teammate Diversity:</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-orange-50 rounded p-1.5 text-center border border-orange-100">
+                      <div className="text-sm font-bold text-orange-600">{diversityStats.min}</div>
+                      <div className="text-xs text-gray-600">Min</div>
+                    </div>
+                    <div className="bg-red-50 rounded p-1.5 text-center border border-red-100">
+                      <div className="text-sm font-bold text-red-600">{diversityStats.max}</div>
+                      <div className="text-xs text-gray-600">Max</div>
+                    </div>
+                    <div className="bg-amber-50 rounded p-1.5 text-center border border-amber-100">
+                      <div className="text-sm font-bold text-amber-600">{diversityStats.avg}</div>
+                      <div className="text-xs text-gray-600">Avg</div>
+                    </div>
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1.5 italic">
+                    Shows how many times players team up together
                   </div>
                 </div>
               </div>
