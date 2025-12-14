@@ -330,11 +330,11 @@
             <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
               <div className="flex items-center gap-3 mb-2">
                 <div className="bg-indigo-500 p-3 rounded-2xl">
-                  <div className="text-white text-3xl">🏓</div>
+                  <div className="text-white text-3xl">🎾</div>
                 </div>
                 <div>
                   <h1 className="text-3xl font-bold text-gray-800">Pickleball Scheduler</h1>
-                  <p className="text-gray-500 text-sm">Balanced game scheduling for pickleball players</p>
+                  <p className="text-gray-500 text-sm">Balanced doubles game scheduling</p>
                 </div>
               </div>
             </div>
@@ -582,7 +582,7 @@
               <div className="space-y-4">
                 <div className="flex items-center justify-between px-2">
                   <h2 className="text-2xl font-bold text-gray-800">
-                    🏓 Games Schedule ({completedGames}/{games.length} completed)
+                    🎾 Games Schedule ({completedGames}/{games.length} completed)
                   </h2>
                   <button
                     onClick={generateBalancedGames}
@@ -600,7 +600,7 @@
                           ? 'bg-gray-200 text-gray-600' 
                           : 'bg-indigo-100 text-indigo-700'
                       }`}>
-                        🏓 Game {idx + 1}
+                        🎾 Game {idx + 1}
                       </span>
                       <button
                         onClick={() => toggleGameComplete(game.id)}
