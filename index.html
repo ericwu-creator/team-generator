@@ -321,7 +321,10 @@
             {games.length > 0 && (<div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h2 className="text-lg font-bold text-gray-800">Games ({completedGames}/{games.length})</h2>
-                <button onClick={generateBalancedGames} className="text-indigo-600 hover:text-indigo-700 flex items-center gap-1 text-xs font-semibold"><Shuffle className="w-3 h-3" />Regenerate</button>
+                <div className="flex items-center gap-2">
+                  <button onClick={generateShareLink} className="text-green-600 hover:text-green-700 flex items-center gap-1 text-xs font-semibold">📤 Share</button>
+                  <button onClick={generateBalancedGames} className="text-indigo-600 hover:text-indigo-700 flex items-center gap-1 text-xs font-semibold"><Shuffle className="w-3 h-3" />Regenerate</button>
+                </div>
               </div>
               {games.map((game, idx) => (<div key={game.id} className={`bg-white rounded-lg p-3 transition-all ${game.completed ? 'opacity-50 bg-gray-50 border-2 border-gray-200' : selectedPlayer && isPlayerInGame(game, selectedPlayer) ? 'border-4 border-yellow-500 shadow-xl bg-yellow-50' : 'border-2 border-gray-200 shadow-sm'}`}>
                 <div className="flex items-center justify-between mb-2">
