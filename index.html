@@ -96,7 +96,10 @@
         const getTeamScore = (team) => {
           let score = 0;
           for (let i = 0; i < team.length; i++) {
-            for (let j = i + 1; j < team.length; j++) score += (partnerHistory[team[i]][team[j]] || 0);
+            for (let j = i + 1; j < team.length; j++) {
+              const timesPartnered = partnerHistory[team[i]][team[j]] || 0;
+              score += timesPartnered * timesPartnered * 100;
+            }
           }
           return score;
         };
@@ -104,7 +107,7 @@
           const availablePlayers = [...activePlayers].sort((a, b) => playerGameCount[a] - playerGameCount[b]);
           const gamePlayers = availablePlayers.slice(0, 4);
           let bestTeamA = null, bestTeamB = null, lowestScore = Infinity;
-          for (let attempt = 0; attempt < 50; attempt++) {
+          for (let attempt = 0; attempt < 200; attempt++) {
             const shuffled = shuffleArray([...gamePlayers]);
             const teamA = shuffled.slice(0, 2), teamB = shuffled.slice(2, 4);
             const totalScore = getTeamScore(teamA) + getTeamScore(teamB);
