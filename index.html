@@ -196,7 +196,8 @@
         return { games: playerGames, teammates: Array.from(teammates), gameCount: playerGames.length };
       };
 
-      const handlePlayerClick = (playerName) => {
+      const handlePlayerClick = (playerName, e) => {
+        if (e) e.stopPropagation();
         if (!activePlayers.includes(playerName)) return;
         setSelectedPlayer(selectedPlayer === playerName ? null : playerName);
       };
@@ -233,7 +234,7 @@
         <div className="min-h-screen bg-gray-50 p-3">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm p-4 mb-3 border border-gray-200">
-              <h1 className="text-xl font-bold text-gray-900">Pickleball Scheduler v1</h1>
+              <h1 className="text-xl font-bold text-gray-900">Pickleball Scheduler v2</h1>
               <p className="text-xs text-gray-500 mt-0.5">Balanced doubles (2v2) game scheduling</p>
             </div>
             <div className="bg-white rounded-lg shadow-sm p-4 mb-3 border border-gray-200">
@@ -281,7 +282,7 @@
                 {activePlayers.map(player => {
                   const gameCount = playerStats[player] || 0;
                   const isSelected = selectedPlayer === player;
-                  return (<span key={player} onClick={() => handlePlayerClick(player)} className={`px-2.5 py-1 rounded text-xs font-medium border-2 cursor-pointer transition-all ${isSelected ? 'bg-yellow-300 text-yellow-900 border-yellow-600 shadow-lg font-bold' : 'bg-white text-green-700 border-green-200 hover:bg-green-100'}`}>
+                  return (<span key={player} onClick={(e) => handlePlayerClick(player, e)} className={`px-2.5 py-1 rounded text-xs font-medium border-2 cursor-pointer transition-all ${isSelected ? 'bg-yellow-300 text-yellow-900 border-yellow-600 shadow-lg font-bold' : 'bg-white text-green-700 border-green-200 hover:bg-green-100'}`}>
                     {player}{gameCount > 0 && <span className="ml-1.5 bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">{gameCount}</span>}
                   </span>);
                 })}
@@ -337,7 +338,7 @@
                       {game.teamA.map(player => {
                         const isTeammate = selectedPlayer && player !== selectedPlayer && game.teamA.includes(selectedPlayer);
                         const isSelectedInGame = player === selectedPlayer;
-                        return (<span key={player} onClick={() => handlePlayerClick(player)} className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${isSelectedInGame ? 'bg-yellow-300 text-yellow-900 border-2 border-yellow-600 shadow-lg font-bold' : isTeammate ? 'bg-lime-400 text-lime-900 border-2 border-lime-600 shadow-md font-bold' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>{player}</span>);
+                        return (<span key={player} onClick={(e) => handlePlayerClick(player, e)} className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${isSelectedInGame ? 'bg-yellow-300 text-yellow-900 border-2 border-yellow-600 shadow-lg font-bold' : isTeammate ? 'bg-lime-400 text-lime-900 border-2 border-lime-600 shadow-md font-bold' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>{player}</span>);
                       })}
                     </div>
                   </div>
@@ -347,7 +348,7 @@
                       {game.teamB.map(player => {
                         const isTeammate = selectedPlayer && player !== selectedPlayer && game.teamB.includes(selectedPlayer);
                         const isSelectedInGame = player === selectedPlayer;
-                        return (<span key={player} onClick={() => handlePlayerClick(player)} className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${isSelectedInGame ? 'bg-yellow-300 text-yellow-900 border-2 border-yellow-600 shadow-lg font-bold' : isTeammate ? 'bg-lime-400 text-lime-900 border-2 border-lime-600 shadow-md font-bold' : 'bg-red-500 text-white hover:bg-red-600'}`}>{player}</span>);
+                        return (<span key={player} onClick={(e) => handlePlayerClick(player, e)} className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${isSelectedInGame ? 'bg-yellow-300 text-yellow-900 border-2 border-yellow-600 shadow-lg font-bold' : isTeammate ? 'bg-lime-400 text-lime-900 border-2 border-lime-600 shadow-md font-bold' : 'bg-red-500 text-white hover:bg-red-600'}`}>{player}</span>);
                       })}
                     </div>
                   </div>
@@ -377,5 +378,3 @@
   </script>
 </body>
 </html>
-
-
