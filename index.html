@@ -1,553 +1,585 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pickleball Game Scheduler</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body>
-  <div id="root"></div>
+import React, { useState } from 'react';
+import { Users, Plus, Shuffle, Trash2, ChevronDown, ChevronUp, UserPlus, Check } from 'lucide-react';
 
-  <script type="text/babel">
-    const { useState, useEffect } = React;
+export default function TeamGameGenerator() {
+  const [playerPool, setPlayerPool] = useState([]);
+  const [activePlayers, setActivePlayers] = useState([]);
+  const [currentName, setCurrentName] = useState('');
+  const [teamSize, setTeamSize] = useState(2);
+  const [games, setGames] = useState([]);
+  const [showSettings, setShowSettings] = useState(false);
+  const [showPlayerPool, setShowPlayerPool] = useState(true);
+  const [numGames, setNumGames] = useState(5);
+  const [playerStats, setPlayerStats] = useState({});
+  const [isLoading, setIsLoading] = useState(true);
 
-    // Lucide icons as inline SVG components
-    const Users = ({ className = "w-6 h-6" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-      </svg>
-    );
-
-    const Plus = ({ className = "w-6 h-6" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-      </svg>
-    );
-
-    const Shuffle = ({ className = "w-6 h-6" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
-      </svg>
-    );
-
-    const Trash2 = ({ className = "w-6 h-6" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-      </svg>
-    );
-
-    const ChevronDown = ({ className = "w-6 h-6" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-      </svg>
-    );
-
-    const ChevronUp = ({ className = "w-6 h-6" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-      </svg>
-    );
-
-    const UserPlus = ({ className = "w-6 h-6" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-      </svg>
-    );
-
-    const Check = ({ className = "w-6 h-6" }) => (
-      <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-      </svg>
-    );
-
-    // Simple localStorage wrapper
-    const storage = {
-      get: (key) => {
-        return new Promise((resolve) => {
-          const value = localStorage.getItem(key);
-          resolve(value ? { key, value } : null);
-        });
-      },
-      set: (key, value) => {
-        return new Promise((resolve) => {
-          localStorage.setItem(key, value);
-          resolve({ key, value });
-        });
+  // Load saved data on mount
+  React.useEffect(() => {
+    const loadData = async () => {
+      try {
+        const result = await window.storage.get('team-generator-data');
+        if (result && result.value) {
+          const data = JSON.parse(result.value);
+          setPlayerPool(data.playerPool || []);
+          setActivePlayers(data.activePlayers || []);
+          setTeamSize(data.teamSize || 2);
+          setNumGames(data.numGames || 5);
+        }
+      } catch (error) {
+        console.log('No saved data found, starting fresh');
+      } finally {
+        setIsLoading(false);
       }
     };
+    loadData();
+  }, []);
 
-    function TeamGameGenerator() {
-      const [playerPool, setPlayerPool] = useState([]);
-      const [activePlayers, setActivePlayers] = useState([]);
-      const [currentName, setCurrentName] = useState('');
-      const [teamSize] = useState(2);
-      const [games, setGames] = useState([]);
-      const [showPlayerPool, setShowPlayerPool] = useState(true);
-      const [numGames, setNumGames] = useState(5);
-      const [playerStats, setPlayerStats] = useState({});
-      const [isLoading, setIsLoading] = useState(true);
-      const [selectedPlayer, setSelectedPlayer] = useState(null);
-
-      useEffect(() => {
-        const loadData = async () => {
-          try {
-            const result = await storage.get('team-generator-data');
-            if (result && result.value) {
-              const data = JSON.parse(result.value);
-              setPlayerPool(data.playerPool || []);
-              setActivePlayers(data.activePlayers || []);
-              setNumGames(data.numGames || 5);
-            }
-          } catch (error) {
-            console.log('No saved data found');
-          } finally {
-            setIsLoading(false);
-          }
-        };
-        loadData();
-      }, []);
-
-      useEffect(() => {
-        if (!isLoading) {
-          const saveData = async () => {
-            try {
-              await storage.set('team-generator-data', JSON.stringify({
-                playerPool,
-                activePlayers,
-                numGames
-              }));
-            } catch (error) {
-              console.error('Failed to save:', error);
-            }
-          };
-          saveData();
-        }
-      }, [playerPool, activePlayers, numGames, isLoading]);
-
-      const addPlayerToPool = () => {
-        if (currentName.trim() && !playerPool.includes(currentName.trim())) {
-          setPlayerPool([...playerPool, currentName.trim()]);
-          setCurrentName('');
+  // Save data whenever it changes
+  React.useEffect(() => {
+    if (!isLoading) {
+      const saveData = async () => {
+        try {
+          await window.storage.set('team-generator-data', JSON.stringify({
+            playerPool,
+            activePlayers,
+            teamSize,
+            numGames
+          }));
+        } catch (error) {
+          console.error('Failed to save data:', error);
         }
       };
+      saveData();
+    }
+  }, [playerPool, activePlayers, teamSize, numGames, isLoading]);
 
-      const removeFromPool = (name) => {
-        setPlayerPool(playerPool.filter(p => p !== name));
-        setActivePlayers(activePlayers.filter(p => p !== name));
-      };
+  const addPlayerToPool = () => {
+    if (currentName.trim() && !playerPool.includes(currentName.trim())) {
+      setPlayerPool([...playerPool, currentName.trim()]);
+      setCurrentName('');
+    }
+  };
 
-      const togglePlayerActive = (name) => {
-        if (activePlayers.includes(name)) {
-          setActivePlayers(activePlayers.filter(p => p !== name));
-        } else {
-          setActivePlayers([...activePlayers, name]);
-        }
-      };
+  const removeFromPool = (name) => {
+    setPlayerPool(playerPool.filter(p => p !== name));
+    setActivePlayers(activePlayers.filter(p => p !== name));
+  };
 
-      const selectAll = () => {
-        setActivePlayers([...playerPool]);
-      };
+  const togglePlayerActive = (name) => {
+    if (activePlayers.includes(name)) {
+      setActivePlayers(activePlayers.filter(p => p !== name));
+    } else {
+      setActivePlayers([...activePlayers, name]);
+    }
+  };
 
-      const deselectAll = () => {
-        setActivePlayers([]);
-      };
+  const selectAll = () => {
+    setActivePlayers([...playerPool]);
+  };
 
-      const shuffleArray = (array) => {
-        const arr = [...array];
-        for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-      };
+  const deselectAll = () => {
+    setActivePlayers([]);
+  };
 
-      const generateBalancedGames = () => {
-        if (activePlayers.length < teamSize * 2) {
-          alert(`Need at least ${teamSize * 2} active players`);
-          return;
-        }
+  const shuffleArray = (array) => {
+    const arr = [...array];
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  };
 
-        const playersPerGame = teamSize * 2;
-        const playerGameCount = {};
-        const partnerHistory = {};
-        
-        activePlayers.forEach(player => {
-          playerGameCount[player] = 0;
-          partnerHistory[player] = {};
-          activePlayers.forEach(other => {
-            if (player !== other) {
-              partnerHistory[player][other] = 0;
-            }
-          });
-        });
+  const generateBalancedGames = () => {
+    if (activePlayers.length < teamSize * 2) {
+      alert(`Need at least ${teamSize * 2} active players for ${teamSize}v${teamSize} games`);
+      return;
+    }
 
-        const newGames = [];
+    const playersPerGame = teamSize * 2;
+    const playerGameCount = {};
+    activePlayers.forEach(player => {
+      playerGameCount[player] = 0;
+    });
 
-        const getPartnershipScore = (player1, player2) => {
-          return partnerHistory[player1][player2] || 0;
-        };
+    const newGames = [];
 
-        const getTeamScore = (team) => {
-          let score = 0;
-          for (let i = 0; i < team.length; i++) {
-            for (let j = i + 1; j < team.length; j++) {
-              score += getPartnershipScore(team[i], team[j]);
-            }
-          }
-          return score;
-        };
+    for (let gameNum = 0; gameNum < numGames; gameNum++) {
+      const availablePlayers = [...activePlayers].sort((a, b) => 
+        playerGameCount[a] - playerGameCount[b]
+      );
 
-        for (let gameNum = 0; gameNum < numGames; gameNum++) {
-          const availablePlayers = [...activePlayers].sort((a, b) => 
-            playerGameCount[a] - playerGameCount[b]
-          );
-
-          const gamePlayers = availablePlayers.slice(0, playersPerGame);
-          
-          let bestTeamA = null;
-          let bestTeamB = null;
-          let lowestScore = Infinity;
-
-          for (let attempt = 0; attempt < 50; attempt++) {
-            const shuffled = shuffleArray([...gamePlayers]);
-            const teamA = shuffled.slice(0, teamSize);
-            const teamB = shuffled.slice(teamSize, playersPerGame);
-            
-            const scoreA = getTeamScore(teamA);
-            const scoreB = getTeamScore(teamB);
-            const totalScore = scoreA + scoreB;
-
-            if (totalScore < lowestScore) {
-              lowestScore = totalScore;
-              bestTeamA = teamA;
-              bestTeamB = teamB;
-            }
-
-            if (totalScore === 0) break;
-          }
-
-          if (bestTeamA && bestTeamB && bestTeamA.length === teamSize && bestTeamB.length === teamSize) {
-            gamePlayers.forEach(player => {
-              playerGameCount[player]++;
-            });
-
-            for (let i = 0; i < bestTeamA.length; i++) {
-              for (let j = i + 1; j < bestTeamA.length; j++) {
-                partnerHistory[bestTeamA[i]][bestTeamA[j]]++;
-                partnerHistory[bestTeamA[j]][bestTeamA[i]]++;
-              }
-            }
-            for (let i = 0; i < bestTeamB.length; i++) {
-              for (let j = i + 1; j < bestTeamB.length; j++) {
-                partnerHistory[bestTeamB[i]][bestTeamB[j]]++;
-                partnerHistory[bestTeamB[j]][bestTeamB[i]]++;
-              }
-            }
-
-            newGames.push({
-              teamA: bestTeamA,
-              teamB: bestTeamB,
-              id: Date.now() + gameNum * 100,
-              completed: false
-            });
-          }
-        }
-
-        setGames(newGames);
-        setPlayerStats(playerGameCount);
-      };
-
-      const toggleGameComplete = (gameId) => {
-        setGames(games.map(game => 
-          game.id === gameId 
-            ? { ...game, completed: !game.completed }
-            : game
-        ));
-      };
-
-      const getMinMaxGames = () => {
-        const counts = Object.values(playerStats);
-        if (counts.length === 0) return { min: 0, max: 0 };
-        return {
-          min: Math.min(...counts),
-          max: Math.max(...counts)
-        };
-      };
-
-      const getTeammateDiversityStats = () => {
-        if (games.length === 0 || activePlayers.length === 0) return { min: 0, max: 0, avg: 0 };
-        
-        const partnerCounts = {};
-        activePlayers.forEach(player => {
-          partnerCounts[player] = {};
-          activePlayers.forEach(other => {
-            if (player !== other) partnerCounts[player][other] = 0;
-          });
-        });
-
-        games.forEach(game => {
-          const processTeam = (team) => {
-            for (let i = 0; i < team.length; i++) {
-              for (let j = i + 1; j < team.length; j++) {
-                partnerCounts[team[i]][team[j]]++;
-                partnerCounts[team[j]][team[i]]++;
-              }
-            }
-          };
-          processTeam(game.teamA);
-          processTeam(game.teamB);
-        });
-
-        const repeatCounts = [];
-        Object.values(partnerCounts).forEach(partners => {
-          Object.values(partners).forEach(count => {
-            if (count > 0) repeatCounts.push(count);
-          });
-        });
-
-        if (repeatCounts.length === 0) return { min: 0, max: 0, avg: 0 };
-
-        return {
-          min: Math.min(...repeatCounts),
-          max: Math.max(...repeatCounts),
-          avg: (repeatCounts.reduce((a, b) => a + b, 0) / repeatCounts.length).toFixed(1)
-        };
-      };
-
-      const getCompletedCount = () => {
-        return games.filter(g => g.completed).length;
-      };
-
-      const getPlayerGamesInfo = (playerName) => {
-        const playerGames = games.filter(game => 
-          game.teamA.includes(playerName) || game.teamB.includes(playerName)
-        );
-        
-        const teammates = new Set();
-        playerGames.forEach(game => {
-          const team = game.teamA.includes(playerName) ? game.teamA : game.teamB;
-          team.forEach(p => {
-            if (p !== playerName) teammates.add(p);
-          });
-        });
-        
-        return {
-          games: playerGames,
-          teammates: Array.from(teammates),
-          gameCount: playerGames.length
-        };
-      };
-
-      const handlePlayerClick = (playerName) => {
-        if (selectedPlayer === playerName) {
-          setSelectedPlayer(null);
-        } else {
-          setSelectedPlayer(playerName);
-        }
-      };
-
-      const isPlayerInGame = (game, playerName) => {
-        return game.teamA.includes(playerName) || game.teamB.includes(playerName);
-      };
-
-      if (isLoading) {
-        return (
-          <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-            <div className="text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500 mx-auto mb-3"></div>
-              <p className="text-gray-600 text-sm">Loading...</p>
-            </div>
-          </div>
-        );
+      const gamePlayers = [];
+      for (let i = 0; i < playersPerGame && i < availablePlayers.length; i++) {
+        gamePlayers.push(availablePlayers[i]);
+        playerGameCount[availablePlayers[i]]++;
       }
 
-      const stats = getMinMaxGames();
-      const completedGames = getCompletedCount();
-      const diversityStats = getTeammateDiversityStats();
+      const shuffledGamePlayers = shuffleArray(gamePlayers);
+      const teamA = shuffledGamePlayers.slice(0, teamSize);
+      const teamB = shuffledGamePlayers.slice(teamSize, playersPerGame);
 
-      return (
-        <div className="min-h-screen bg-gray-50 p-3">
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-3 border border-gray-200">
-              <h1 className="text-xl font-bold text-gray-900">Pickleball Scheduler</h1>
-              <p className="text-xs text-gray-500 mt-0.5">Balanced doubles (2v2) game scheduling</p>
-            </div>
+      if (teamA.length === teamSize && teamB.length === teamSize) {
+        newGames.push({
+          teamA,
+          teamB,
+          id: Date.now() + gameNum,
+          completed: false,
+          winner: null
+        });
+      }
+    }
 
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-3 border border-gray-200">
-              <button
-                onClick={() => setShowPlayerPool(!showPlayerPool)}
-                className="flex items-center gap-2 text-gray-700 hover:text-indigo-600 transition-colors mb-3 w-full text-sm font-semibold"
-              >
-                {showPlayerPool ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                <span>Player Pool ({playerPool.length})</span>
-              </button>
+    setGames(newGames);
+    setPlayerStats(playerGameCount);
+  };
 
-              {showPlayerPool && (
+  const toggleGameComplete = (gameId) => {
+    setGames(games.map(game => 
+      game.id === gameId 
+        ? { ...game, completed: !game.completed, winner: game.completed ? null : game.winner }
+        : game
+    ));
+  };
+
+  const setGameWinner = (gameId, winner) => {
+    setGames(games.map(game => 
+      game.id === gameId 
+        ? { ...game, winner, completed: true }
+        : game
+    ));
+  };
+
+  const clearAll = () => {
+    setActivePlayers([]);
+    setGames([]);
+    setPlayerStats({});
+  };
+
+  const getMinMaxGames = () => {
+    const counts = Object.values(playerStats);
+    if (counts.length === 0) return { min: 0, max: 0 };
+    return {
+      min: Math.min(...counts),
+      max: Math.max(...counts)
+    };
+  };
+
+  const getCompletedCount = () => {
+    return games.filter(g => g.completed).length;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your players...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const stats = getMinMaxGames();
+  const completedGames = getCompletedCount();
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-3">
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-3 border border-gray-200">
+          <h1 className="text-xl font-bold text-gray-900">Pickleball Scheduler</h1>
+          <p className="text-xs text-gray-500 mt-0.5">Balanced doubles (2v2) game scheduling</p>
+        </div>
+
+        {/* Player Pool Section */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-3 border border-gray-200">
+          <button
+            onClick={() => setShowPlayerPool(!showPlayerPool)}
+            className="flex items-center gap-2 text-gray-700 hover:text-indigo-600 transition-colors mb-3 w-full text-sm font-semibold"
+          >
+            {showPlayerPool ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            <span>Player Pool ({playerPool.length})</span>
+          </button>
+
+          {showPlayerPool && (
+            <>
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  value={currentName}
+                  onChange={(e) => setCurrentName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addPlayerToPool()}
+                  placeholder="Add player..."
+                  className="flex-1 px-3 py-1.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                />
+                <button
+                  onClick={addPlayerToPool}
+                  className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5 font-medium text-sm"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  Add
+                </button>
+              </div>
+
+              {playerPool.length === 0 ? (
+                <div className="text-center py-6 text-gray-400 text-sm">
+                  <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
+                  <p>No players in pool</p>
+                </div>
+              ) : (
                 <>
-                  <div className="flex gap-2 mb-3">
-                    <input
-                      type="text"
-                      value={currentName}
-                      onChange={(e) => setCurrentName(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && addPlayerToPool()}
-                      placeholder="Add player..."
-                      className="flex-1 px-3 py-1.5 text-sm bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                    />
-                    <button
-                      onClick={addPlayerToPool}
-                      className="bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition-colors flex items-center gap-1.5 font-medium text-sm"
-                    >
-                      <UserPlus className="w-4 h-4" />
-                      Add
+                  <div className="flex gap-2 mb-2 text-xs">
+                    <button onClick={selectAll} className="text-indigo-600 hover:text-indigo-700 font-medium">
+                      Select All
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button onClick={deselectAll} className="text-gray-600 hover:text-gray-700 font-medium">
+                      Deselect All
                     </button>
                   </div>
-
-                  {playerPool.length === 0 ? (
-                    <div className="text-center py-6 text-gray-400 text-sm">
-                      <Users className="w-10 h-10 mx-auto mb-2 opacity-50" />
-                      <p>No players in pool</p>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex gap-2 mb-2 text-xs">
-                        <button onClick={selectAll} className="text-indigo-600 hover:text-indigo-700 font-medium">
-                          Select All
-                        </button>
-                        <span className="text-gray-300">|</span>
-                        <button onClick={deselectAll} className="text-gray-600 hover:text-gray-700 font-medium">
-                          Deselect All
-                        </button>
-                      </div>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                        {playerPool.map((player) => {
-                          const isActive = activePlayers.includes(player);
-                          const gameCount = playerStats[player] || 0;
-                          const isSelected = selectedPlayer === player;
-                          return (
-                            <div
-                              key={player}
-                              className={`rounded-lg p-2 border-2 transition-all cursor-pointer ${
-                                isActive
-                                  ? 'bg-indigo-50 border-indigo-300'
-                                  : 'bg-gray-50 border-gray-200 hover:border-gray-300'
-                              } ${isSelected ? 'bg-yellow-200 border-yellow-500 shadow-lg' : ''}`}
-                              onClick={() => togglePlayerActive(player)}
-                            >
-                              <div className="flex items-center justify-between">
-                                <span className={`text-sm font-medium truncate ${isActive ? 'text-indigo-700' : 'text-gray-700'} ${isSelected ? 'text-yellow-900 font-bold' : ''}`}>
-                                  {player}
-                                </span>
-                                <div className="flex items-center gap-1 flex-shrink-0">
-                                  {gameCount > 0 && (
-                                    <span className="bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                                      {gameCount}
-                                    </span>
-                                  )}
-                                  {isActive && (
-                                    <div className="bg-indigo-500 text-white rounded-full p-0.5">
-                                      <Check className="w-3 h-3" />
-                                    </div>
-                                  )}
-                                  <button
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      removeFromPool(player);
-                                    }}
-                                    className="hover:bg-red-100 rounded p-0.5 transition-colors"
-                                  >
-                                    <Trash2 className="w-3 h-3 text-red-500" />
-                                  </button>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                    {playerPool.map((player) => {
+                      const isActive = activePlayers.includes(player);
+                      return (
+                        <div
+                          key={player}
+                          className={`rounded-lg p-2 border transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-indigo-50 border-indigo-300'
+                              : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => togglePlayerActive(player)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`text-sm font-medium truncate ${isActive ? 'text-indigo-700' : 'text-gray-700'}`}>
+                              {player}
+                            </span>
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {isActive && (
+                                <div className="bg-indigo-500 text-white rounded-full p-0.5">
+                                  <Check className="w-3 h-3" />
                                 </div>
-                              </div>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeFromPool(player);
+                                }}
+                                className="hover:bg-red-100 rounded p-0.5 transition-colors"
+                              >
+                                <Trash2 className="w-3 h-3 text-red-500" />
+                              </button>
                             </div>
-                          );
-                        })}
-                      </div>
-                    </>
-                  )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </>
               )}
-            </div>
+            </>
+          )}
+        </div>
 
-            {activePlayers.length > 0 && (
-              <div className="bg-green-50 rounded-lg shadow-sm p-3 mb-3 border border-green-200">
+        {/* Active Players Summary */}
+        {activePlayers.length > 0 && (
+          <div className="bg-green-50 rounded-lg shadow-sm p-3 mb-3 border border-green-200">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-semibold text-green-800 text-sm">Playing Today ({activePlayers.length})</h3>
+              <button
+                onClick={deselectAll}
+                className="text-xs text-green-700 hover:text-green-800 flex items-center gap-1 font-medium"
+              >
+                Clear
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {activePlayers.map((player) => (
+                <span key={player} className="bg-white text-green-700 px-2.5 py-1 rounded text-xs font-medium border border-green-200">
+                  {player}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Number of Games Section */}
+        <div className="bg-white rounded-lg shadow-sm p-4 mb-3 border border-gray-200">
+          <label className="block text-sm font-semibold text-gray-700 mb-2">
+            Number of Games
+          </label>
+          <div className="bg-gray-50 rounded-lg p-3 mb-3 border border-gray-200">
+            <div className="text-center mb-2">
+              <span className="text-3xl font-bold text-indigo-600">{numGames}</span>
+            </div>
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={numGames}
+              onChange={(e) => setNumGames(Number(e.target.value))}
+              className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+            />
+            <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <span>1</span>
+              <span>20</span>
+            </div>
+          </div>
+
+          {/* Generate Button */}
+          {activePlayers.length >= teamSize * 2 && (
+            <button
+              onClick={generateBalancedGames}
+              className="w-full bg-indigo-600 text-white py-2.5 rounded-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 font-semibold text-sm"
+            >
+              <Shuffle className="w-4 h-4" />
+              Generate {numGames} {numGames === 1 ? 'Game' : 'Games'}
+            </button>
+          )}
+          
+          {activePlayers.length > 0 && activePlayers.length < teamSize * 2 && (
+            <div className="text-center py-3 text-amber-600 font-medium text-sm">
+              Need at least 4 players
+            </div>
+          )}
+        </div>
+
+        {/* Stats Summary */}
+        {games.length > 0 && (
+          <div className="bg-white rounded-lg shadow-sm p-3 mb-3 border border-gray-200">
+            <h3 className="font-semibold text-gray-700 mb-2 text-sm">Stats</h3>
+            <div className="grid grid-cols-3 gap-2">
+              <div className="bg-blue-50 rounded-lg p-2 text-center border border-blue-100">
+                <div className="text-xl font-bold text-blue-600">{stats.min}</div>
+                <div className="text-xs text-gray-600">Min</div>
+              </div>
+              <div className="bg-purple-50 rounded-lg p-2 text-center border border-purple-100">
+                <div className="text-xl font-bold text-purple-600">{stats.max}</div>
+                <div className="text-xs text-gray-600">Max</div>
+              </div>
+              <div className="bg-green-50 rounded-lg p-2 text-center border border-green-100">
+                <div className="text-xl font-bold text-green-600">{completedGames}/{games.length}</div>
+                <div className="text-xs text-gray-600">Done</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Games Display */}
+        {games.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between px-1">
+              <h2 className="text-lg font-bold text-gray-800">
+                Games ({completedGames}/{games.length})
+              </h2>
+              <button
+                onClick={generateBalancedGames}
+                className="text-indigo-600 hover:text-indigo-700 flex items-center gap-1 text-xs font-semibold"
+              >
+                <Shuffle className="w-3 h-3" />
+                Regenerate
+              </button>
+            </div>
+            {games.map((game, idx) => (
+              <div key={game.id} className={`bg-white rounded-lg shadow-sm p-3 transition-all border ${game.completed ? 'opacity-50 bg-gray-50 border-gray-200' : 'border-gray-200'}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-semibold text-green-800 text-sm">Playing Today ({activePlayers.length})</h3>
+                  <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
+                    game.completed 
+                      ? 'bg-gray-200 text-gray-600' 
+                      : 'bg-indigo-100 text-indigo-700'
+                  }`}>
+                    Game {idx + 1}
+                  </span>
                   <button
-                    onClick={deselectAll}
-                    className="text-xs text-green-700 hover:text-green-800 flex items-center gap-1 font-medium"
+                    onClick={() => toggleGameComplete(game.id)}
+                    className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                      game.completed
+                        ? 'bg-green-500 text-white hover:bg-green-600'
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
                   >
-                    Clear
+                    {game.completed ? '✓' : '▶'}
                   </button>
                 </div>
-                <div className="mb-2 text-xs text-green-700 italic">
-                  💡 Tip: Click any player name to highlight their games and teammates
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {activePlayers.map((player) => {
-                    const gameCount = playerStats[player] || 0;
-                    const playerInfo = getPlayerGamesInfo(player);
-                    const isSelected = selectedPlayer === player;
-                    return (
-                      <span 
-                        key={player} 
-                        onClick={() => handlePlayerClick(player)}
-                        className={`px-2.5 py-1 rounded text-xs font-medium border-2 cursor-pointer transition-all ${
-                          isSelected 
-                            ? 'bg-yellow-300 text-yellow-900 border-yellow-600 shadow-lg font-bold' 
-                            : 'bg-white text-green-700 border-green-200 hover:bg-green-100'
-                        }`}
-                      >
-                        {player}
-                        {gameCount > 0 && (
-                          <span className="ml-1.5 bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
-                            {gameCount}
-                          </span>
-                        )}
-                      </span>
-                    );
-                  })}
-                </div>
-                {selectedPlayer && (
-                  <div className="mt-3 pt-3 border-t border-green-300">
-                    <div className="text-xs text-green-800 font-semibold mb-1">
-                      {selectedPlayer}'s Info:
-                    </div>
-                    <div className="text-xs text-green-700">
-                      Playing {getPlayerGamesInfo(selectedPlayer).gameCount} {getPlayerGamesInfo(selectedPlayer).gameCount === 1 ? 'game' : 'games'}
-                      {getPlayerGamesInfo(selectedPlayer).teammates.length > 0 && (
-                        <span className="ml-2">
-                          • Teammates: {getPlayerGamesInfo(selectedPlayer).teammates.join(', ')}
+                
+                <div className="flex items-center gap-2">
+                  <div className="bg-blue-50 rounded-lg p-2 border border-blue-200 flex-1">
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {game.teamA.map((player) => (
+                        <span key={player} className="bg-blue-500 text-white px-2 py-0.5 rounded text-xs font-medium">
+                          {player}
                         </span>
-                      )}
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-green-300 flex items-center gap-3 text-xs">
-                      <div className="flex items-center gap-1">
-                        <div className="w-5 h-5 bg-yellow-300 rounded border-2 border-yellow-600 shadow"></div>
-                        <span className="text-green-800 font-medium">= Selected</span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <div className="w-5 h-5 bg-lime-400 rounded border-2 border-lime-600 shadow"></div>
-                        <span className="text-green-800 font-medium">= Teammates</span>
-                      </div>
+                      ))}
                     </div>
                   </div>
-                )}
-              </div>
-            )}
-
-            <div className="bg-white rounded-lg shadow-sm p-4 mb-3 border border-gray-200">
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Number of Games
-              </label>
-              <div className="bg-gray-50 rounded-lg p-3 mb-3 border border-gray-200">
-                <div className="text-center mb-2">
-                  <span className="text-3xl font-bold text-indigo-600">{numGames}</span>
+                  <span className="text-sm font-bold text-gray-400">vs</span>
+                  <div className="bg-red-50 rounded-lg p-2 border border-red-200 flex-1">
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {game.teamB.map((player) => (
+                        <span key={player} className="bg-red-500 text-white px-2 py-0.5 rounded text-xs font-medium">
+                          {player}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+        {/* Player Pool Section */}
+        <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
+          <button
+            onClick={() => setShowPlayerPool(!showPlayerPool)}
+            className="flex items-center gap-2 text-gray-800 hover:text-indigo-500 transition-colors mb-4 w-full"
+          >
+            {showPlayerPool ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            <span className="font-bold text-lg">Player Pool ({playerPool.length})</span>
+          </button>
+
+          {showPlayerPool && (
+            <>
+              <div className="flex gap-2 mb-4">
+                <input
+                  type="text"
+                  value={currentName}
+                  onChange={(e) => setCurrentName(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && addPlayerToPool()}
+                  placeholder="Add new player to pool..."
+                  className="flex-1 px-4 py-3 bg-gray-50 border-2 border-gray-200 rounded-2xl focus:outline-none focus:border-indigo-500 text-lg"
+                />
+                <button
+                  onClick={addPlayerToPool}
+                  className="bg-indigo-500 text-white px-6 py-3 rounded-2xl hover:bg-indigo-600 transition-colors flex items-center gap-2 font-semibold shadow-md"
+                >
+                  <UserPlus className="w-5 h-5" />
+                  Add
+                </button>
+              </div>
+
+              {playerPool.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                  <p>No players in pool. Add your regular players!</p>
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-2 mb-3">
+                    <button
+                      onClick={selectAll}
+                      className="text-sm text-indigo-600 hover:text-indigo-700 font-medium"
+                    >
+                      Select All
+                    </button>
+                    <span className="text-gray-300">|</span>
+                    <button
+                      onClick={deselectAll}
+                      className="text-sm text-gray-600 hover:text-gray-700 font-medium"
+                    >
+                      Deselect All
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {playerPool.map((player) => {
+                      const isActive = activePlayers.includes(player);
+                      return (
+                        <div
+                          key={player}
+                          className={`relative rounded-2xl p-4 border-2 transition-all cursor-pointer ${
+                            isActive
+                              ? 'bg-indigo-50 border-indigo-400 shadow-md'
+                              : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                          }`}
+                          onClick={() => togglePlayerActive(player)}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className={`font-medium ${isActive ? 'text-indigo-700' : 'text-gray-600'}`}>
+                              {player}
+                            </span>
+                            <div className="flex items-center gap-1">
+                              {isActive && (
+                                <div className="bg-indigo-500 text-white rounded-full p-1">
+                                  <Check className="w-4 h-4" />
+                                </div>
+                              )}
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeFromPool(player);
+                                }}
+                                className="hover:bg-red-100 rounded-full p-1 transition-colors ml-1"
+                              >
+                                <Trash2 className="w-4 h-4 text-red-500" />
+                              </button>
+                            </div>
+                          </div>
+                          {playerStats[player] !== undefined && (
+                            <span className="text-xs text-gray-500 mt-1 block">
+                              {playerStats[player]} games today
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Active Players Summary */}
+        {activePlayers.length > 0 && (
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-3xl shadow-lg p-6 mb-4 border-2 border-green-200">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="font-bold text-green-800 text-lg">Playing Today ({activePlayers.length})</h3>
+              <button
+                onClick={deselectAll}
+                className="text-sm text-green-700 hover:text-green-800 flex items-center gap-1 font-medium"
+              >
+                <Trash2 className="w-4 h-4" />
+                Clear Selection
+              </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {activePlayers.map((player) => (
+                <span
+                  key={player}
+                  className="bg-white text-green-700 px-4 py-2 rounded-full font-medium border-2 border-green-300 shadow-sm"
+                >
+                  {player}
+                  {playerStats[player] !== undefined && (
+                    <span className="ml-2 bg-green-200 text-green-800 text-xs px-2 py-0.5 rounded-full font-bold">
+                      {playerStats[player]}
+                    </span>
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Settings Section */}
+        <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className="flex items-center gap-2 text-gray-600 hover:text-indigo-500 transition-colors mb-2"
+          >
+            {showSettings ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            <span className="font-medium">Settings</span>
+          </button>
+
+          {showSettings && (
+            <div className="bg-gray-50 rounded-2xl p-4 mb-4 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Number of Games: {numGames}
+                </label>
                 <input
                   type="range"
                   min="1"
@@ -558,164 +590,155 @@
                 />
                 <div className="flex justify-between text-xs text-gray-500 mt-1">
                   <span>1</span>
+                  <span>5</span>
+                  <span>10</span>
+                  <span>15</span>
                   <span>20</span>
                 </div>
               </div>
 
-              {activePlayers.length >= teamSize * 2 && (
-                <button
-                  onClick={generateBalancedGames}
-                  className="w-full bg-indigo-600 text-white py-2.5 rounded-lg hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 font-semibold text-sm"
-                >
-                  <Shuffle className="w-4 h-4" />
-                  Generate {numGames} {numGames === 1 ? 'Game' : 'Games'}
-                </button>
-              )}
-              
-              {activePlayers.length > 0 && activePlayers.length < teamSize * 2 && (
-                <div className="text-center py-3 text-amber-600 font-medium text-sm">
-                  Need at least 4 players
-                </div>
-              )}
-            </div>
-
-            {games.length > 0 && (
-              <div className="bg-white rounded-lg shadow-sm p-3 mb-3 border border-gray-200">
-                <h3 className="font-semibold text-gray-700 mb-2 text-sm">Stats</h3>
-                <div className="grid grid-cols-3 gap-2 mb-2">
-                  <div className="bg-blue-50 rounded-lg p-2 text-center border border-blue-100">
-                    <div className="text-xl font-bold text-blue-600">{stats.min}</div>
-                    <div className="text-xs text-gray-600">Min Games</div>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg p-2 text-center border border-purple-100">
-                    <div className="text-xl font-bold text-purple-600">{stats.max}</div>
-                    <div className="text-xs text-gray-600">Max Games</div>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-2 text-center border border-green-100">
-                    <div className="text-xl font-bold text-green-600">{completedGames}/{games.length}</div>
-                    <div className="text-xs text-gray-600">Done</div>
-                  </div>
-                </div>
-                <div className="pt-2 border-t border-gray-200">
-                  <div className="text-xs font-semibold text-gray-700 mb-1.5">Teammate Diversity:</div>
-                  <div className="grid grid-cols-3 gap-2">
-                    <div className="bg-orange-50 rounded p-1.5 text-center border border-orange-100">
-                      <div className="text-sm font-bold text-orange-600">{diversityStats.min}</div>
-                      <div className="text-xs text-gray-600">Min</div>
-                    </div>
-                    <div className="bg-red-50 rounded p-1.5 text-center border border-red-100">
-                      <div className="text-sm font-bold text-red-600">{diversityStats.max}</div>
-                      <div className="text-xs text-gray-600">Max</div>
-                    </div>
-                    <div className="bg-amber-50 rounded p-1.5 text-center border border-amber-100">
-                      <div className="text-sm font-bold text-amber-600">{diversityStats.avg}</div>
-                      <div className="text-xs text-gray-600">Avg</div>
-                    </div>
-                  </div>
-                  <div className="text-xs text-gray-500 mt-1.5 italic">
-                    Shows how many times players team up together
-                  </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Players per team: {teamSize}
+                </label>
+                <input
+                  type="range"
+                  min="1"
+                  max="6"
+                  value={teamSize}
+                  onChange={(e) => setTeamSize(Number(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>1v1</span>
+                  <span>2v2</span>
+                  <span>3v3</span>
+                  <span>4v4</span>
+                  <span>5v5</span>
+                  <span>6v6</span>
                 </div>
               </div>
-            )}
+            </div>
+          )}
 
-            {games.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between px-1">
-                  <h2 className="text-lg font-bold text-gray-800">
-                    Games ({completedGames}/{games.length})
-                  </h2>
-                  <button
-                    onClick={generateBalancedGames}
-                    className="text-indigo-600 hover:text-indigo-700 flex items-center gap-1 text-xs font-semibold"
-                  >
-                    <Shuffle className="w-3 h-3" />
-                    Regenerate
-                  </button>
-                </div>
-                {games.map((game, idx) => (
-                  <div key={game.id} className={`bg-white rounded-lg p-3 transition-all ${
-                    game.completed ? 'opacity-50 bg-gray-50 border-2 border-gray-200' : 
-                    selectedPlayer && isPlayerInGame(game, selectedPlayer) ? 'border-4 border-yellow-500 shadow-xl bg-yellow-50' : 
-                    'border-2 border-gray-200 shadow-sm'
-                  }`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`px-2 py-0.5 rounded text-xs font-semibold ${
-                        game.completed 
-                          ? 'bg-gray-200 text-gray-600' 
-                          : 'bg-indigo-100 text-indigo-700'
-                      }`}>
-                        Game {idx + 1}
-                      </span>
-                      <button
-                        onClick={() => toggleGameComplete(game.id)}
-                        className={`px-3 py-1 rounded text-xs font-semibold transition-colors ${
-                          game.completed
-                            ? 'bg-green-500 text-white hover:bg-green-600'
-                            : 'bg-blue-500 text-white hover:bg-blue-600'
-                        }`}
-                      >
-                        {game.completed ? '✓' : '▶'}
-                      </button>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <div className="bg-blue-50 rounded-lg p-2 border border-blue-200 flex-1">
-                        <div className="flex flex-wrap gap-1 justify-center">
-                          {game.teamA.map((player) => {
-                            const isTeammate = selectedPlayer && player !== selectedPlayer && 
-                              game.teamA.includes(selectedPlayer);
-                            const isSelectedInGame = player === selectedPlayer;
-                            return (
-                              <span 
-                                key={player} 
-                                onClick={() => handlePlayerClick(player)}
-                                className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${
-                                  isSelectedInGame ? 'bg-yellow-300 text-yellow-900 border-2 border-yellow-600 shadow-lg font-bold' : 
-                                  isTeammate ? 'bg-lime-400 text-lime-900 border-2 border-lime-600 shadow-md font-bold' : 
-                                  'bg-blue-500 text-white hover:bg-blue-600'
-                                }`}
-                              >
-                                {player}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
-                      <span className="text-sm font-bold text-gray-400">vs</span>
-                      <div className="bg-red-50 rounded-lg p-2 border border-red-200 flex-1">
-                        <div className="flex flex-wrap gap-1 justify-center">
-                          {game.teamB.map((player) => {
-                            const isTeammate = selectedPlayer && player !== selectedPlayer && 
-                              game.teamB.includes(selectedPlayer);
-                            const isSelectedInGame = player === selectedPlayer;
-                            return (
-                              <span 
-                                key={player}
-                                onClick={() => handlePlayerClick(player)}
-                                className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${
-                                  isSelectedInGame ? 'bg-yellow-300 text-yellow-900 border-2 border-yellow-600 shadow-lg font-bold' : 
-                                  isTeammate ? 'bg-lime-400 text-lime-900 border-2 border-lime-600 shadow-md font-bold' : 
-                                  'bg-red-500 text-white hover:bg-red-600'
-                                }`}
-                              >
-                                {player}
-                              </span>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+          {/* Generate Button */}
+          {activePlayers.length >= teamSize * 2 && (
+            <button
+              onClick={generateBalancedGames}
+              className="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white py-4 rounded-2xl hover:from-indigo-600 hover:to-purple-600 transition-all flex items-center justify-center gap-2 font-bold text-lg shadow-lg"
+            >
+              <Shuffle className="w-6 h-6" />
+              Generate {numGames} Balanced Games
+            </button>
+          )}
+          
+          {activePlayers.length > 0 && activePlayers.length < teamSize * 2 && (
+            <div className="text-center py-4 text-amber-600 font-medium">
+              Need at least {teamSize * 2} players for {teamSize}v{teamSize} games
+              <br />
+              <span className="text-sm">(Currently have {activePlayers.length})</span>
+            </div>
+          )}
+        </div>
+
+        {/* Stats Summary */}
+        {games.length > 0 && (
+          <div className="bg-white rounded-3xl shadow-lg p-6 mb-4">
+            <h3 className="font-bold text-gray-800 mb-3">Distribution Summary</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="bg-blue-50 rounded-2xl p-4 text-center">
+                <div className="text-3xl font-bold text-blue-600">{stats.min}</div>
+                <div className="text-sm text-gray-600">Min games</div>
+              </div>
+              <div className="bg-purple-50 rounded-2xl p-4 text-center">
+                <div className="text-3xl font-bold text-purple-600">{stats.max}</div>
+                <div className="text-sm text-gray-600">Max games</div>
+              </div>
+              <div className="bg-green-50 rounded-2xl p-4 text-center">
+                <div className="text-3xl font-bold text-green-600">{completedGames}/{games.length}</div>
+                <div className="text-sm text-gray-600">Completed</div>
+              </div>
+            </div>
+            {stats.max - stats.min <= 1 ? (
+              <div className="mt-3 text-center text-green-600 font-medium text-sm">
+                ✓ Perfect balance achieved!
+              </div>
+            ) : (
+              <div className="mt-3 text-center text-amber-600 font-medium text-sm">
+                Difference of {stats.max - stats.min} games (best possible with {activePlayers.length} players)
               </div>
             )}
           </div>
-        </div>
-      );
-    }
+        )}
 
-    ReactDOM.render(<TeamGameGenerator />, document.getElementById('root'));
-  </script>
-</body>
-</html>
+        {/* Games Display */}
+        {games.length > 0 && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between px-2">
+              <h2 className="text-2xl font-bold text-gray-800">
+                Games Schedule ({completedGames}/{games.length} completed)
+              </h2>
+              <button
+                onClick={generateBalancedGames}
+                className="text-indigo-500 hover:text-indigo-600 flex items-center gap-1 text-sm font-semibold"
+              >
+                <Shuffle className="w-4 h-4" />
+                Regenerate
+              </button>
+            </div>
+            {games.map((game, idx) => (
+              <div key={game.id} className={`bg-white rounded-2xl shadow p-4 transition-all ${game.completed ? 'opacity-50 bg-gray-50' : ''}`}>
+                <div className="flex items-center justify-between mb-3">
+                  <span className={`px-3 py-1 rounded-full font-semibold text-sm ${
+                    game.completed 
+                      ? 'bg-gray-200 text-gray-600' 
+                      : 'bg-indigo-100 text-indigo-700'
+                  }`}>
+                    Game {idx + 1}
+                  </span>
+                  <button
+                    onClick={() => toggleGameComplete(game.id)}
+                    className={`px-4 py-1.5 rounded-full font-semibold text-sm transition-colors ${
+                      game.completed
+                        ? 'bg-green-500 text-white hover:bg-green-600'
+                        : 'bg-blue-500 text-white hover:bg-blue-600'
+                    }`}
+                  >
+                    {game.completed ? '✓ Done' : '▶ Play'}
+                  </button>
+                </div>
+                
+                <div className="flex items-center gap-3 justify-center">
+                  {/* Team A */}
+                  <div className="bg-blue-50 rounded-xl p-3 border border-blue-200 flex-1">
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {game.teamA.map((player) => (
+                        <span key={player} className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm font-medium">
+                          {player}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* VS */}
+                  <span className="text-xl font-bold text-gray-400">vs</span>
+
+                  {/* Team B */}
+                  <div className="bg-red-50 rounded-xl p-3 border border-red-200 flex-1">
+                    <div className="flex flex-wrap gap-1 justify-center">
+                      {game.teamB.map((player) => (
+                        <span key={player} className="bg-red-500 text-white px-3 py-1 rounded-lg text-sm font-medium">
+                          {player}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
