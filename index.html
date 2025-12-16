@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pickleball Game Scheduler 5</title>
+  <title>Pickleball Game Scheduler 6</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -194,8 +194,15 @@
           [game.teamA, game.teamB].forEach(team => {
             for (let i = 0; i < team.length; i++) {
               for (let j = i + 1; j < team.length; j++) {
-                partnerCounts[team[i]][team[j]]++;
-                partnerCounts[team[j]][team[i]]++;
+                const player1 = team[i];
+                const player2 = team[j];
+                // Only count if both players are still in activePlayers
+                if (partnerCounts[player1] && partnerCounts[player1][player2] !== undefined) {
+                  partnerCounts[player1][player2]++;
+                }
+                if (partnerCounts[player2] && partnerCounts[player2][player1] !== undefined) {
+                  partnerCounts[player2][player1]++;
+                }
               }
             }
           });
