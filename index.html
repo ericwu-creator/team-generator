@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pickleball Game Scheduler 1</title>
+  <title>Pickleball Game Scheduler</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -12,14 +12,13 @@
 <body>
   <div id="root"></div>
   <script type="text/babel">
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useCallback } = React;
     const Users = ({ className = "w-6 h-6" }) => (<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>);
     const Shuffle = ({ className = "w-6 h-6" }) => (<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>);
     const Trash2 = ({ className = "w-6 h-6" }) => (<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>);
     const ChevronDown = ({ className = "w-6 h-6" }) => (<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>);
     const ChevronUp = ({ className = "w-6 h-6" }) => (<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg>);
     const UserPlus = ({ className = "w-6 h-6" }) => (<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>);
-    const Check = ({ className = "w-6 h-6" }) => (<svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>);
     
     const storage = {
       get: (key) => new Promise((resolve) => { const value = localStorage.getItem(key); resolve(value ? { key, value } : null); }),
@@ -73,35 +72,28 @@
         }
       }, [playerPool, activePlayers, isLoading]);
 
-      const addPlayerToPool = () => {
+      const addPlayerToPool = useCallback(() => {
         if (currentName.trim() && !playerPool.includes(currentName.trim())) {
-          setPlayerPool([...playerPool, currentName.trim()]);
+          setPlayerPool(prev => [...prev, currentName.trim()]);
           setCurrentName('');
         }
-      };
+      }, [currentName, playerPool]);
 
-      const removeFromPool = (name) => {
-        if (selectedPlayer === name) {
-          setSelectedPlayer(null);
-        }
+      const removeFromPool = useCallback((name) => {
+        setSelectedPlayer(prev => prev === name ? null : prev);
         setPlayerPool(prev => prev.filter(p => p !== name));
         setActivePlayers(prev => prev.filter(p => p !== name));
-      };
+      }, []);
 
-      const togglePlayerActive = (name) => {
+      const togglePlayerActive = useCallback((name) => {
         setActivePlayers(prev => {
-          const isCurrentlyActive = prev.includes(name);
-          if (isCurrentlyActive) {
-            // Deactivating player - clear selection if this player is selected
-            if (selectedPlayer === name) {
-              setSelectedPlayer(null);
-            }
+          if (prev.includes(name)) {
+            setSelectedPlayer(current => current === name ? null : current);
             return prev.filter(p => p !== name);
-          } else {
-            return [...prev, name];
           }
+          return [...prev, name];
         });
-      };
+      }, []);
 
       const shuffleArray = (array) => {
         const arr = [...array];
@@ -112,7 +104,7 @@
         return arr;
       };
 
-      const generateBalancedGames = () => {
+      const generateBalancedGames = useCallback(() => {
         if (activePlayers.length < 4) { alert('Need at least 4 players'); return; }
         
         const totalPlayers = activePlayers.length;
@@ -164,11 +156,11 @@
         setGames(newGames);
         setPlayerStats(playerGameCount);
         setSelectedPlayer(null);
-      };
+      }, [activePlayers]);
 
-      const toggleGameComplete = (gameId) => {
-        setGames(games.map(game => game.id === gameId ? { ...game, completed: !game.completed } : game));
-      };
+      const toggleGameComplete = useCallback((gameId) => {
+        setGames(prev => prev.map(game => game.id === gameId ? { ...game, completed: !game.completed } : game));
+      }, []);
 
       const getMinMaxGames = () => {
         const counts = Object.values(playerStats);
@@ -211,14 +203,10 @@
         return { games: playerGames, teammates: Array.from(teammates), gameCount: playerGames.length };
       };
 
-      const handlePlayerClick = (playerName, e) => {
-        if (e) {
-          e.preventDefault();
-          e.stopPropagation();
-        }
+      const handlePlayerClick = useCallback((playerName) => {
         if (!activePlayers.includes(playerName)) return;
-        setSelectedPlayer(prevSelected => prevSelected === playerName ? null : playerName);
-      };
+        setSelectedPlayer(prev => prev === playerName ? null : playerName);
+      }, [activePlayers]);
 
       const isPlayerInGame = (game, playerName) => game.teamA.includes(playerName) || game.teamB.includes(playerName);
 
@@ -295,7 +283,7 @@
                 {activePlayers.map(player => {
                   const gameCount = playerStats[player] || 0;
                   const isSelected = selectedPlayer === player;
-                  return (<span key={player} onClick={(e) => handlePlayerClick(player, e)} className={`px-2.5 py-1 rounded text-xs font-medium border-2 cursor-pointer transition-all ${isSelected ? 'bg-yellow-300 text-yellow-900 border-yellow-600 shadow-lg font-bold' : 'bg-white text-green-700 border-green-200 hover:bg-green-100'}`}>
+                  return (<span key={player} onClick={() => handlePlayerClick(player)} className={`px-2.5 py-1 rounded text-xs font-medium border-2 cursor-pointer transition-all ${isSelected ? 'bg-yellow-300 text-yellow-900 border-yellow-600 shadow-lg font-bold' : 'bg-white text-green-700 border-green-200 hover:bg-green-100'}`}>
                     {player}{gameCount > 0 && <span className="ml-1.5 bg-purple-500 text-white text-xs px-1.5 py-0.5 rounded-full font-bold">{gameCount}</span>}
                   </span>);
                 })}
@@ -351,7 +339,7 @@
                       {game.teamA.map(player => {
                         const isTeammate = selectedPlayer && player !== selectedPlayer && game.teamA.includes(selectedPlayer);
                         const isSelectedInGame = player === selectedPlayer;
-                        return (<span key={player} onClick={(e) => handlePlayerClick(player, e)} className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${isSelectedInGame ? 'bg-yellow-300 text-yellow-900 border-2 border-yellow-600 shadow-lg font-bold' : isTeammate ? 'bg-lime-400 text-lime-900 border-2 border-lime-600 shadow-md font-bold' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>{player}</span>);
+                        return (<span key={player} onClick={() => handlePlayerClick(player)} className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${isSelectedInGame ? 'bg-yellow-300 text-yellow-900 border-2 border-yellow-600 shadow-lg font-bold' : isTeammate ? 'bg-lime-400 text-lime-900 border-2 border-lime-600 shadow-md font-bold' : 'bg-blue-500 text-white hover:bg-blue-600'}`}>{player}</span>);
                       })}
                     </div>
                   </div>
@@ -361,7 +349,7 @@
                       {game.teamB.map(player => {
                         const isTeammate = selectedPlayer && player !== selectedPlayer && game.teamB.includes(selectedPlayer);
                         const isSelectedInGame = player === selectedPlayer;
-                        return (<span key={player} onClick={(e) => handlePlayerClick(player, e)} className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${isSelectedInGame ? 'bg-yellow-300 text-yellow-900 border-2 border-yellow-600 shadow-lg font-bold' : isTeammate ? 'bg-lime-400 text-lime-900 border-2 border-lime-600 shadow-md font-bold' : 'bg-red-500 text-white hover:bg-red-600'}`}>{player}</span>);
+                        return (<span key={player} onClick={() => handlePlayerClick(player)} className={`px-2 py-0.5 rounded text-xs font-medium cursor-pointer transition-all ${isSelectedInGame ? 'bg-yellow-300 text-yellow-900 border-2 border-yellow-600 shadow-lg font-bold' : isTeammate ? 'bg-lime-400 text-lime-900 border-2 border-lime-600 shadow-md font-bold' : 'bg-red-500 text-white hover:bg-red-600'}`}>{player}</span>);
                       })}
                     </div>
                   </div>
