@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pickleball Game Scheduler</title>
+  <title>Pickleball Game Scheduler v1</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -276,7 +276,7 @@
             {activePlayers.length > 0 && (<div className="bg-green-50 rounded-lg shadow-sm p-3 mb-3 border border-green-200">
               <div className="flex items-center justify-between mb-2">
                 <h3 className="font-semibold text-green-800 text-sm">Playing Today ({activePlayers.length})</h3>
-                <button onClick={() => setActivePlayers([])} className="text-xs text-green-700 hover:text-green-800 flex items-center gap-1 font-medium">Clear</button>
+                <button onClick={() => { setActivePlayers([]); setSelectedPlayer(null); setGames([]); setPlayerStats({}); }} className="text-xs text-green-700 hover:text-green-800 flex items-center gap-1 font-medium">Clear</button>
               </div>
               <div className="mb-2 text-xs text-green-700 italic">💡 Tip: Click any player name to highlight their games and teammates</div>
               <div className="flex flex-wrap gap-1.5">
