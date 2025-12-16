@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pickleball Game Scheduler</title>
+  <title>Pickleball Game Scheduler v3</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -102,9 +102,9 @@
         if (activePlayers.length < 4) { alert('Need at least 4 players'); return; }
         
         const totalPlayers = activePlayers.length;
-        const targetGamesPerPlayer = totalPlayers <= 6 ? 2 : 3;
+        const targetGamesPerPlayer = totalPlayers <= 6 ? 3 : 4;
         const calculatedGames = Math.ceil((totalPlayers * targetGamesPerPlayer) / 4);
-        const optimalNumGames = Math.min(Math.max(calculatedGames, 3), 20);
+        const optimalNumGames = Math.min(Math.max(calculatedGames, 10), 30);
         
         const playerGameCount = {}, partnerHistory = {};
         activePlayers.forEach(player => {
@@ -149,6 +149,7 @@
         }
         setGames(newGames);
         setPlayerStats(playerGameCount);
+        setSelectedPlayer(null);
       };
 
       const toggleGameComplete = (gameId) => {
@@ -197,9 +198,12 @@
       };
 
       const handlePlayerClick = (playerName, e) => {
-        if (e) e.stopPropagation();
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
         if (!activePlayers.includes(playerName)) return;
-        setSelectedPlayer(selectedPlayer === playerName ? null : playerName);
+        setSelectedPlayer(prevSelected => prevSelected === playerName ? null : playerName);
       };
 
       const isPlayerInGame = (game, playerName) => game.teamA.includes(playerName) || game.teamB.includes(playerName);
@@ -234,7 +238,7 @@
         <div className="min-h-screen bg-gray-50 p-3">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm p-4 mb-3 border border-gray-200">
-              <h1 className="text-xl font-bold text-gray-900">Pickleball Scheduler v2</h1>
+              <h1 className="text-xl font-bold text-gray-900">Pickleball Scheduler</h1>
               <p className="text-xs text-gray-500 mt-0.5">Balanced doubles (2v2) game scheduling</p>
             </div>
             <div className="bg-white rounded-lg shadow-sm p-4 mb-3 border border-gray-200">
