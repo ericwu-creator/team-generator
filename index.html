@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pickleball Game Scheduler 6</title>
+  <title>Pickleball Game Scheduler v6</title>
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -95,74 +95,93 @@
         const calculatedGames = Math.ceil((totalPlayers * targetGamesPerPlayer) / 4);
         const optimalNumGames = Math.min(Math.max(calculatedGames, 10), 30);
         
-        const playerGameCount = {};
-        const partnerHistory = {};
+        // Try generating 10 different schedules and pick the best one
+        let bestSchedule = null;
+        let bestDiversityScore = Infinity;
         
-        activePlayers.forEach(player => {
-          playerGameCount[player] = 0;
-          partnerHistory[player] = {};
-          activePlayers.forEach(other => { 
-            if (player !== other) partnerHistory[player][other] = 0; 
+        for (let attempt = 0; attempt < 10; attempt++) {
+          const playerGameCount = {};
+          const partnerHistory = {};
+          
+          activePlayers.forEach(player => {
+            playerGameCount[player] = 0;
+            partnerHistory[player] = {};
+            activePlayers.forEach(other => { 
+              if (player !== other) partnerHistory[player][other] = 0; 
+            });
           });
-        });
-        
-        const newGames = [];
-        
-        const getTeamScore = (team) => {
-          let score = 0;
-          for (let i = 0; i < team.length; i++) {
-            for (let j = i + 1; j < team.length; j++) {
-              const timesPartnered = partnerHistory[team[i]][team[j]] || 0;
-              score += timesPartnered * timesPartnered * 100;
-            }
-          }
-          return score;
-        };
-        
-        for (let gameNum = 0; gameNum < optimalNumGames; gameNum++) {
-          const availablePlayers = [...activePlayers].sort((a, b) => playerGameCount[a] - playerGameCount[b]);
-          const gamePlayers = availablePlayers.slice(0, 4);
-          let bestTeamA = null;
-          let bestTeamB = null;
-          let lowestScore = Infinity;
           
-          for (let attempt = 0; attempt < 200; attempt++) {
-            const shuffled = shuffleArray([...gamePlayers]);
-            const teamA = shuffled.slice(0, 2);
-            const teamB = shuffled.slice(2, 4);
-            const totalScore = getTeamScore(teamA) + getTeamScore(teamB);
-            
-            if (totalScore < lowestScore) { 
-              lowestScore = totalScore; 
-              bestTeamA = teamA; 
-              bestTeamB = teamB; 
-            }
-            if (totalScore === 0) break;
-          }
+          const newGames = [];
           
-          if (bestTeamA && bestTeamB) {
-            gamePlayers.forEach(player => playerGameCount[player]++);
-            
-            for (let i = 0; i < 2; i++) {
-              for (let j = i + 1; j < 2; j++) {
-                partnerHistory[bestTeamA[i]][bestTeamA[j]]++;
-                partnerHistory[bestTeamA[j]][bestTeamA[i]]++;
-                partnerHistory[bestTeamB[i]][bestTeamB[j]]++;
-                partnerHistory[bestTeamB[j]][bestTeamB[i]]++;
+          const getTeamScore = (team) => {
+            let score = 0;
+            for (let i = 0; i < team.length; i++) {
+              for (let j = i + 1; j < team.length; j++) {
+                const timesPartnered = partnerHistory[team[i]][team[j]] || 0;
+                score += timesPartnered * timesPartnered * 100;
               }
             }
+            return score;
+          };
+          
+          for (let gameNum = 0; gameNum < optimalNumGames; gameNum++) {
+            const availablePlayers = [...activePlayers].sort((a, b) => playerGameCount[a] - playerGameCount[b]);
+            const gamePlayers = availablePlayers.slice(0, 4);
+            let bestTeamA = null;
+            let bestTeamB = null;
+            let lowestScore = Infinity;
             
-            newGames.push({ 
-              teamA: bestTeamA, 
-              teamB: bestTeamB, 
-              id: Date.now() + gameNum * 100, 
-              completed: false 
-            });
+            for (let teamAttempt = 0; teamAttempt < 200; teamAttempt++) {
+              const shuffled = shuffleArray([...gamePlayers]);
+              const teamA = shuffled.slice(0, 2);
+              const teamB = shuffled.slice(2, 4);
+              const totalScore = getTeamScore(teamA) + getTeamScore(teamB);
+              
+              if (totalScore < lowestScore) { 
+                lowestScore = totalScore; 
+                bestTeamA = teamA; 
+                bestTeamB = teamB; 
+              }
+              if (totalScore === 0) break;
+            }
+            
+            if (bestTeamA && bestTeamB) {
+              gamePlayers.forEach(player => playerGameCount[player]++);
+              
+              for (let i = 0; i < 2; i++) {
+                for (let j = i + 1; j < 2; j++) {
+                  partnerHistory[bestTeamA[i]][bestTeamA[j]]++;
+                  partnerHistory[bestTeamA[j]][bestTeamA[i]]++;
+                  partnerHistory[bestTeamB[i]][bestTeamB[j]]++;
+                  partnerHistory[bestTeamB[j]][bestTeamB[i]]++;
+                }
+              }
+              
+              newGames.push({ 
+                teamA: bestTeamA, 
+                teamB: bestTeamB, 
+                id: Date.now() + gameNum * 100 + attempt * 10000, 
+                completed: false 
+              });
+            }
+          }
+          
+          // Calculate diversity score for this schedule (lower is better)
+          const partnerCounts = Object.values(partnerHistory).flatMap(partners => Object.values(partners));
+          const maxRepeats = partnerCounts.length > 0 ? Math.max(...partnerCounts) : 0;
+          const avgRepeats = partnerCounts.length > 0 ? partnerCounts.reduce((a, b) => a + b, 0) / partnerCounts.length : 0;
+          const diversityScore = maxRepeats * 1000 + avgRepeats * 100; // Prioritize reducing max repeats
+          
+          if (diversityScore < bestDiversityScore) {
+            bestDiversityScore = diversityScore;
+            bestSchedule = { games: newGames, stats: playerGameCount };
           }
         }
         
-        setGames(newGames);
-        setPlayerStats(playerGameCount);
+        if (bestSchedule) {
+          setGames(bestSchedule.games);
+          setPlayerStats(bestSchedule.stats);
+        }
       };
 
       const toggleGameComplete = (gameId) => {
